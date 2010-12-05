@@ -1,0 +1,6 @@
+/**
+ *
+ *	\todo: define-switch das in ifs übersetzt
+ *	\todo: generelle parse engine
+ *	\todo: überall wo memory für chars alloc'd wird, sollte sizeof( char ) benutzt werden, oder 1byte typedef nehmen
+ **/

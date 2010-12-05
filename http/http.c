@@ -1,0 +1,230 @@
+
+#include "http/http.h"
+#include "lib/general.h"
+#include "lib/error.h"
+#include "lib/dstring.h"
+#include <stdlib.h>
+#include <string.h>
+
+HttpVersion httpVersionFromString( const char *s )
+{
+	if ( strcmp( s, httpVersionToString( HTTP_VERSION_1_0 ) ) == 0 )
+		return HTTP_VERSION_1_0;
+	if ( strcmp( s, httpVersionToString( HTTP_VERSION_1_1 ) ) == 0 )
+		return HTTP_VERSION_1_1;
+	
+	return HTTP_VERSION_INVALID;
+}
+
+const char *httpVersionToString( HttpVersion hv ) 
+{
+	switch ( hv ) {
+		case HTTP_VERSION_INVALID:
+			return "Invalid";
+		case HTTP_VERSION_1_0:
+			return "HTTP/1.0";
+		case HTTP_VERSION_1_1:
+			return "HTTP/1.1";
+	}
+	handle_fail( "httpVersionToString: unimplemented http version" );
+}
+
+const char *hscReasonphrase( HttpStatuscode status ) 
+{
+	const char *str;
+
+	
+	
+	switch ( status ) {
+	case STATUS_OK:
+		str = "OK";
+		break;
+	case STATUS_NOT_FOUND:
+		str = "Not Found";
+		break;
+	case STATUS_MOVED_PERM:
+		str = "Moved Permanently";
+		break;
+	case STATUS_FOUND:
+		str = "Found";
+		break;
+	case STATUS_BAD_REQUEST:
+		str = "Bad Request";
+		break;
+	case STATUS_FORBIDDEN:
+		str = "Forbidden";
+		break;
+	default:
+		status  =(HttpStatuscode) ( 1 / (int) status);
+		handle_fail( "hscReasonphrase: statuscode not implemented" );
+	}
+	
+	return str;
+}
+
+
+HttpMessage *hmInit()
+{
+	HttpMessage * hm = malloc( sizeof( HttpMessage ) );
+	if ( ! hm ) {
+		handle_error( "hmInit" );
+	}
+	memset( hm, 0, sizeof( HttpMessage ) );
+	
+	hm->statusLine = hslInit();
+	hm->headers = vcInit();
+	
+	return hm;
+}
+
+HttpMessage* hmReset( HttpMessage* hm )
+{
+	hslReset( hm->statusLine );
+	//hrlReset( hm->requestLine );
+	
+	/** \todo richtigen reset einführen */
+	while( hm->headers->size ) {
+		hmhFree( ( HttpMessageHeader * ) vcPop( hm->headers ) );
+	}
+	
+	return hm;
+}
+
+
+void hmFree( HttpMessage* hm )
+{
+	if ( !hm ) 
+		return;
+	
+	if ( hm->headers ) {
+		int i;
+		for ( i = 0; i < hm->headers->size; ++i ) {
+			hmhFree( ( HttpMessageHeader* ) hm->headers->items[i] );
+		}
+		vcFree( hm->headers );
+	}
+	if ( hm->statusLine )
+		hslFree( hm->statusLine );
+	
+	free( hm );
+}
+
+DString* hmToString( HttpMessage* hm, DString *dest )
+{
+	if ( !hm )
+		return 0;
+	
+	hslToString( hm->statusLine, dest );
+	
+	dsCatString( dest, "\r\n" );
+	
+	int i;
+	for ( i = 0; i < hm->headers->size ; ++i ) {
+		HttpMessageHeader *header = ( HttpMessageHeader * ) hm->headers->items[i];
+		hmhToString( header, dest );
+		dsCatString( dest, "\r\n" );
+	}
+	
+	dsCatString( dest, "\r\n" );
+	
+	return dest;
+}
+
+
+HttpMessageHeader *hmhInit()
+{
+	HttpMessageHeader * hmh = malloc( sizeof( HttpMessageHeader ) );
+	if ( ! hmh ) {
+		handle_error( "hmhInit" );
+	}
+	memset( hmh, 0, sizeof( HttpMessageHeader ) );
+	
+	hmh->fieldName = dsInit( 16 );
+	hmh->fieldValue = dsInit( 100 );
+		
+	return hmh;
+}
+
+HttpMessageHeader* hmhInit2( const char* fieldName, const char* fieldValue )
+{
+	HttpMessageHeader *hmh = hmhInit();
+	
+	dsCpyString( hmh->fieldName, fieldName );
+	dsCpyString( hmh->fieldValue, fieldValue );
+	
+	return hmh;
+}
+
+HttpMessageHeader* hmhReset( HttpMessageHeader* hmh )
+{
+	dsCpyChars( hmh->fieldName, 0, 0 );
+	dsCpyChars( hmh->fieldValue, 0, 0 );
+}
+
+
+void hmhFree( HttpMessageHeader* hmh )
+{
+	if ( !hmh )
+		return;
+	
+	if ( hmh->fieldName )
+		dsFree( hmh->fieldName );
+	
+	if ( hmh->fieldValue )
+		dsFree( hmh->fieldValue );
+	
+	free( hmh );
+}
+
+DString* hmhToString( HttpMessageHeader* hmh, DString *dest )
+{
+	if ( !dest )
+		dest = dsInit( 100 );
+	dsCatF( dest, "%S: %S", hmh->fieldName, hmh->fieldValue );
+	 
+	return dest;
+}
+
+
+HttpStatusLine *hslInit()
+{
+	HttpStatusLine * hsl = malloc( sizeof( HttpStatusLine ) );
+	if ( ! hsl ) {
+		handle_error( "hshInit" );
+	}
+	memset( hsl, 0, sizeof( HttpStatusLine ) );
+	
+	hsl->httpversion = HTTP_VERSION_INVALID;
+	hsl->statuscode = STATUS_INVALID;
+	
+	return hsl;
+}
+
+HttpStatusLine* hslReset( HttpStatusLine* hsl )
+{
+	hsl->httpversion = HTTP_VERSION_INVALID;
+	hsl->statuscode = STATUS_INVALID;
+}
+
+
+
+void hslFree( HttpStatusLine* hsl )
+{
+	if ( !hsl ) 
+		return;
+
+	free( hsl );
+
+}
+
+DString* hslToString( HttpStatusLine* hsl, DString *dest )
+{
+	if ( !dest )
+		dest = dsInit( 100 );
+	dsCatF( dest, "%s %d %s", 	httpVersionToString( hsl->httpversion ), 
+								(int) hsl->statuscode, 
+								hscReasonphrase( hsl->statuscode ) );
+	 
+	return dest;
+}
+
