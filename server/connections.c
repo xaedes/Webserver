@@ -144,7 +144,9 @@ Connections *consConnectionSetIOStatus( Connections *cons, int i, IO_Status ios 
 		
 		cons->clients[i].ios = ios_receive;
 		cons->poll[i].events = POLLIN;
+		cons->clients[i].rqst = rqstInit();
 		cons->clients[i].lnsRead = lnsInit();
+		cons->clients[i].rqst->lns = cons->clients[i].lnsRead;
 		break;
 	case ios_send:
 		cons->clients[i].ios = ios_send;

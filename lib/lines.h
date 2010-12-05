@@ -1,24 +1,14 @@
 #ifndef __lines_header__
 #define __lines_header__
 
-#include "lib/line.h"
+#include "lib/vector.h"
 
 /**
  * Contains multiple lines.
  * The lines are managed as a double linked list.
- * 
+ * Each element points to a c string representing the line
  */
-typedef struct Lines {
-	Line *head;	/**< The head of the double linked list. */
-	Line *last;	/**< The last element of the double linked list. */
-	
-	/**
-	 * Is used by lnsAddBuffer to store information between two calls
-	 * 
-	 * \todo better name for this variable
-	 */
-	char tmp;	/**<  */
-} Lines;
+typedef Vector Lines;
 
 /** \memberof Lines
  * 
@@ -54,7 +44,7 @@ int lnsCount( Lines *lns );
  * \return targeted Lines instance
  */
 
-Lines *lnsAdd( Lines *lns, Line *ln );
+Lines *lnsAdd( Lines *lns, char *ln );
 
 /** \memberof Lines
  * \callergraph
@@ -68,7 +58,7 @@ Lines *lnsAdd( Lines *lns, Line *ln );
  * \param size string length
  * \return targeted Lines instance
  */
-Lines *lnsAppend( Lines *lns, char *str, int size );
+//Lines *lnsAppend( Lines *lns, char *str, int size );
 
 /** \memberof Lines
  * 
@@ -80,18 +70,31 @@ Lines *lnsAppend( Lines *lns, char *str, int size );
  * \param size string length
  * \return targeted Lines instance
  */
-Lines *lnsAppendLine( Lines *lns, char *str, int size );
+//Lines *lnsAppendLine( Lines *lns, char *str, int size );
 
 /** \memberof Lines
  * 
- * Deletes the given Line object from the Lines object 
- * AND frees it.
+ * Deletes a line.
  * 
  * \param lns targeted Lines instance
- * \param ln Line instance managed by Lines
+ * \param i index of line
  * \return targeted Lines instance
  */
-Lines *lnsDeleteLine( Lines *lns, Line *ln );
+Lines *lnsDeleteLine( Lines *lns, int i );
+
+/** \memberof Lines
+ * 
+ * Parses the given memory area into the lines object.
+ * All Lines point to locations in the given string after this.
+ * This method will modify the given memory area!
+ * All CR and LF will be replaced by 0
+ * 
+ * \param lns targeted Lines instance
+ * \param str pointer to memory area
+ * \param size size of memory area
+ * \return targeted Lines instance
+ */
+Lines *lnsParse( Lines *lns, char *str, int size );
 
 /** \memberof Lines
  * 
@@ -106,7 +109,7 @@ Lines *lnsDeleteLine( Lines *lns, Line *ln );
  * \param size determines how many chars from the buffer will be append
  * \return targeted Lines instance
  */
-Lines *lnsAddBuffer( Lines *lns, char *buffer, int size);
+//Lines *lnsAddBuffer( Lines *lns, char *buffer, int size);
 
 /** \memberof Lines
  * 
@@ -115,7 +118,7 @@ Lines *lnsAddBuffer( Lines *lns, char *buffer, int size);
  * \param lns targeted Lines instance
  * \return targeted Lines instance
  */
-int lnsRqstComplete( Lines *lns );
+//int lnsRqstComplete( Lines *lns );
 
 /** \memberof Lines
  * 

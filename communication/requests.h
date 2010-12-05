@@ -3,12 +3,15 @@
 
 #include "lib/lines.h"
 #include "lib/vector.h"
+#include "lib/dstring.h"
 
 /**
  * Saves and parses an incoming request from a client
  */
-
 typedef struct Request {
+	int lastNCR;
+	int lastNLF;
+	DString *buffer;	/**< Buffer to read to */
 	Lines *lns;			/**< Lines to parse from */
 	char *method;		/**< the parsed method from the request line */
 	char *uri;			/**< the parsed uri from the request line */
@@ -17,13 +20,22 @@ typedef struct Request {
 } Request;
 
 
+/**
+ * Returns the size of the string until a CR LF CR LF 
+ * sequence is reached (excluding CR LF CR LF). 
+ * If there is no CR LF CR LF sequence, size is
+ * returned.
+ */
+int sizeUntilDoubleNewline( int *nCR, int *nLF, const char *string, int size );
+
+
 /** \memberof Request
  *
  * Contructor - Allocates memory for a new Request instance.
  *
  * \return new Request instance
  */
-Request *rqstInit( Lines *lns );
+Request *rqstInit( );
 
 /** \memberof Request
  *

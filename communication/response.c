@@ -179,14 +179,15 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 			dsZeroTerminate( filename );
 			
 			if ( fisdir( filename->buffer ) ) {
-				dsCpyString( filename, cfg->serverDomain );
 				if ( dsLast( filename ) == '/' ) {
+					dsCpyString( filename, cfg->serverDomain );
 					dsCatString( filename, ( rsp->rqst->uri[0] == '/' ? 1 : 0 ) + rsp->rqst->uri );
 					dsCatString( filename, cfg->indexFile );
 					
 					rsp->message->http->statusLine->statuscode = STATUS_FOUND;
 					
 				} else {
+					dsCpyString( filename, cfg->serverDomain );
 					dsCatString( filename, ( rsp->rqst->uri[0] == '/' ? 1 : 0 ) + rsp->rqst->uri );
 					dsCatString( filename, "/" );
 

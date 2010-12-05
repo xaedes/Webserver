@@ -65,6 +65,7 @@ void printLn( Line *ln )
  * Prints debug information for a Lines object.
  *
  */
+/*
 void printLns( Lines *lns )
 {
 	printf( "display of Lines %p\n", lns );
@@ -78,7 +79,7 @@ void printLns( Lines *lns )
 		printf( "total length so far: %d\n", s );
 		x = x->next;
 	}
-}
+}*/
 
 
 /** \memberof Main
