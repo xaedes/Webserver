@@ -20,6 +20,7 @@ const char *httpVersionToString( HttpVersion hv )
 {
 	switch ( hv ) {
 		case HTTP_VERSION_INVALID:
+			handle_fail("httpVersionToString: invalid");
 			return "Invalid";
 		case HTTP_VERSION_1_0:
 			return "HTTP/1.0";

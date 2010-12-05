@@ -6,7 +6,7 @@
  * Contains a single line, and pointers to the previous or next line
  */
 typedef struct Line {
-	char *str;			/**< contains the 0-terminated string as data for this line */
+	char *str;			/**< points to the 0-terminated string for this line */
 	struct Line *next;	/**< points to next line */
 	struct Line *prev;	/**< points to previous line */
 } Line;
@@ -21,44 +21,18 @@ typedef struct Line {
  */
 Line *lnInit();
 
-//entfernt vorhande CR und LF aus ln->str
-/** \memberof Line
- * 
- * removes any \r and \\n characters from string
- * 
- * \param ln targeted Line instance
- * \return targeted Line instance
- */
-Line *lnTrim( Line *ln );
 
 /** \memberof Line
  * 
- * Sets the string value of this line to a given string with a specific length.
- * The memory of the existing string value is reallocated.
- * If existing string value was set to NULL, new memory is allocated.
+ * Sets the string pointer of this line to a given string.
  * 
  * \param ln targeted Line instance
- * \param str new string value (will be copied)
- * \param size size of new string value
+ * \param str new string
  * \return targeted Line instance
  * 
  */
-Line *lnSet( Line *ln, char *str, int size );
+Line *lnSet( Line *ln, char *str );
 
-/** \memberof Line
- * 
- * Appends the given string value with a specific length to the string value 
- * of this line .
- * The memory of the existing string value is reallocated.
- * If existing string value was set to NULL, new memory is allocated.
- * 
- * \param ln targeted Line instance
- * \param str string value to append (will be copied)
- * \param size size of string value to append
- * \return targeted Line instance
- * 
- */
-Line *lnAppend( Line *ln, char *str, int size );
 
 /** \memberof Line
  * 

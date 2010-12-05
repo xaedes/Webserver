@@ -4,7 +4,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-Request *rqstInit( Lines *lns )
+int sizeUntilDoubleNewline( int *nCR, int *nLF, const char *string, int size )
+{
+	int i = 0;
+	int lastNonCRLD = -1;
+	while ( i < size ) {
+		if ( string[i] == '\r' )
+			++(*nCR);
+		else if ( string[i] == '\n' )
+			++(*nLF);
+		else {
+			*nCR = 0;
+			*nLF = 0;
+			lastNonCRLD = i;
+		}
+		if ( ( *nCR >= 2 ) || ( *nLF >= 2 ) ) {
+			return lastNonCRLD + 1;
+		}
+		++i;
+	}
+	return size;
+}
+
+Request *rqstInit( )
 {
 	Request *rqst = malloc( sizeof( Request ) );
 
@@ -13,7 +35,8 @@ Request *rqstInit( Lines *lns )
 
 	memset( rqst, 0,  sizeof( Request ) );
 
-	rqst->lns = lns;
+	/**< \todo make the initial buffer size configurable */
+	rqst->buffer = dsInit( 512 );
 
 	return rqst;
 }
@@ -49,7 +72,7 @@ int parseWhileNoSP( char *from, char *end, char **dest, char **newpos )
 
 Request *rqstParseRequestLine( Request *rqst )
 {
-	char *ln = rqst->lns->head->str;
+	char *ln = rqst->lns->items[0];
 	char *pos = ln;
 	int len = strlen( ln );
 	char *end = pos + len;
@@ -83,6 +106,9 @@ void rqstFree( Request *rqst )
 	if ( rqst->httpversion )
 		free( rqst->httpversion );
 
+	if ( rqst->buffer )
+		dsFree( rqst->buffer );
+	
 	free( rqst );
 }
 

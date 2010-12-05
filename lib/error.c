@@ -13,6 +13,8 @@ void handle_error( char *msg )
 
 void handle_fail( char *msg )
 {
+	int x = 1;
+	int y = x/(x-x);
 	fprintf( stderr, "%s", msg );
 	exit( EXIT_FAILURE );
 }

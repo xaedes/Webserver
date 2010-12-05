@@ -44,7 +44,7 @@ int lnsCount( Lines *lns );
  * \return targeted Lines instance
  */
 
-Lines *lnsAdd( Lines *lns, Line *ln );
+Lines *lnsAdd( Lines *lns, char *ln );
 
 /** \memberof Lines
  * \callergraph
@@ -74,14 +74,13 @@ Lines *lnsAdd( Lines *lns, Line *ln );
 
 /** \memberof Lines
  * 
- * Deletes the given Line object from the Lines object 
- * and frees it.
+ * Deletes a line.
  * 
  * \param lns targeted Lines instance
- * \param ln Line instance managed by Lines
+ * \param i index of line
  * \return targeted Lines instance
  */
-Lines *lnsDeleteLine( Lines *lns, Line *ln );
+Lines *lnsDeleteLine( Lines *lns, int i );
 
 /** \memberof Lines
  * 
