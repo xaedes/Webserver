@@ -1,5 +1,4 @@
 #include "lib/lines.h"
-#include "lib/line.h"
 #include "lib/error.h"
 #include <string.h>
 #include <stdlib.h>
@@ -7,41 +6,27 @@
 
 Lines *lnsInit()
 {
-	Lines * lns = malloc( sizeof( Lines ) );
-	if ( ! lns )
-		handle_error("lnsInit");
-	memset( lns, 0, sizeof( Lines ) );
+	Lines * lns = vcInit();
 	return lns;
 }
 
 int lnsIsEmpty( Lines *lns )
 {
-	return ( !lns->head );
+	return ( !lns->size );
 }
 
 int lnsCount( Lines *lns )
 {
-	int s = 0;
-	Line *x = lns->head;
-	while ( x ) {
-		x = x->next;
-		s++;
-	}
-	return s;
+	return lns->size;
 }
 
-Lines *lnsAdd( Lines *lns, Line *ln )
+Lines *lnsAdd( Lines *lns, char *ln )
 {
-	if (!lns->head)
-		lns->head = ln;
-	if (lns->last)
-		lns->last->next = ln;
-	ln->prev = lns->last;
-	ln->next = 0;
-	lns->last = ln;
+	vcPush( lns, ln );
 	return lns;
 }
 
+/*
 Lines *lnsAppend( Lines *lns, char *str, int size )
 {
 	if ( lnsIsEmpty( lns ) )
@@ -53,7 +38,9 @@ Lines *lnsAppend( Lines *lns, char *str, int size )
 	//lnTrim( lns->last );
 	return lns;
 }
+*/
 
+/*
 Lines *lnsAppendLine( Lines *lns, char *str, int size )
 {
 	Line *ln = lnInit( );
@@ -63,33 +50,15 @@ Lines *lnsAppendLine( Lines *lns, char *str, int size )
 	
 	return lns;
 }
+*/
 
-
-Lines* lnsDeleteLine(Lines* lns, Line* ln)
+Lines* lnsDeleteLine( Lines* lns, int i )
 {
-	if ( !ln )
-		return lns;
-	if ( !lns )
-		return lns;
-	
-	if ( ln == lns->head ) {
-		lns->head = ln->next;
-	}
-	if ( ln == lns->last ) {
-		lns->last = ln->prev;
-	}
-	
-	if ( ln->next ) {
-		ln->next->prev = ln->prev;
-	}
-	if ( ln->prev ) {
-		ln->prev->next = ln->next;
-	}
-	
-	lnFree( ln );
+	vcDel( lns, i );
+	return lns;
 }
 
-
+/*
 Lines *lnsAddBuffer( Lines *lns, char *buffer, int size)
 {
 	char *last;
@@ -109,7 +78,7 @@ Lines *lnsAddBuffer( Lines *lns, char *buffer, int size)
 			last = pos + 1;
 			break;
 		default:
-			/* void */
+			
 			break;
 		}
 		lns->tmp = *pos;
@@ -125,6 +94,7 @@ Lines *lnsAddBuffer( Lines *lns, char *buffer, int size)
 	}
 	return lns;
 }
+*/
 // Lines *lnsAddBuffer( Lines *lns, char *buffer, int size)
 // {
 // 	char *last;
@@ -146,23 +116,81 @@ Lines *lnsAddBuffer( Lines *lns, char *buffer, int size)
 // 	return lns;
 // }
 
+/*
 int lnsRqstComplete( Lines *lns )
 {
 	if ( lnsCount( lns ) < 2 )
 		return 0;
 	return ( ( strlen( lns->last->str ) == 0 ) && ( strlen( lns->last->prev->str ) == 0 ) );
 }
+*/
+
+Lines* lnsParse( Lines *lns, char* str, int size )
+{
+	int i = 0;
+	lnsAdd( lns, str );	//first line points to begin of the string
+	while ( i < size ) {
+		switch( str[i] ) {
+		case '\r':
+			str[i] = '\0';
+			if ( i > 0 ) {
+				switch( str[i-1] ) {
+				case '\r':	//CR CR - after first CR begins a new line
+					lnsAdd( lns, str + i );
+					break;
+				case '\n':	//LF CR - after LF begins a new line
+					lnsAdd( lns, str + i );
+					break;
+				default:
+					break;
+				}
+			} else if ( i + 1 < size ) {
+				if ( ( str[i+1] != '\r' ) &&
+					 ( str[i+1] != '\n' ) ) {
+					lnsAdd( lns, str + i + 1 );
+				}
+				
+			} else { //i == 0 | size == 1
+				/* first line already lined up */
+			}
+			break;
+		case '\n':
+			str[i] = '\0';
+			if ( i > 0 ) {
+				switch( str[i-1] ) {
+				case '\r':	//CR LF - after CR LF begins a new line
+					if ( i + 1 < size )
+						lnsAdd( lns, str + i + 1 );
+					break;
+				case '\n':	//LF LF - after first LF begins a new line
+					lnsAdd( lns, str + i );
+					break;
+				default:
+					break;
+				}
+			} else if ( i + 1 < size ) {
+				if ( ( str[i+1] != '\r' ) &&
+					 ( str[i+1] != '\n' ) ) {
+					lnsAdd( lns, str + i + 1 );
+				}
+				
+			} else { //i == 0 | size == 1
+				/* first line already lined up */
+			}
+			break;
+		default:
+			break;
+		}
+		++i;
+	}
+	
+	return lns;
+}
+
 
 void lnsFree( Lines *lns )
 {
-	if ( !lns )
-		return;
-	
-	while( lns->head ) {
-		lnsDeleteLine( lns, lns->head );
-	}
-
-	free( lns );
+	vcFree( lns );
 }
 
 
