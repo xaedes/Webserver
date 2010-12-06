@@ -4,6 +4,7 @@
 #include "communication/requests.h"
 #include "http/http.h"
 #include "lib/dstring.h"
+#include "lib/vector.h"
 #include "server/serverconfig.h"
 #include <stdio.h>
 
@@ -110,6 +111,7 @@ ResponseMessage *rspmReset( ResponseMessage *rspm );
  * Generates and saves the response for a given Request object
  */
 typedef struct Response {
+	Vector *strings;	/**< Saves pointers to strings that have to be free'd */
 	Request *rqst; 				/**< corresponding Request object */
 	ResponseMessage *message;	/**< saves the generated message */
 	int sendState; 				/**< stores whether currently sending message header ( == 0) or message body ( == 1) */

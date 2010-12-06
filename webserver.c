@@ -89,10 +89,6 @@ void printLns( Lines *lns )
  */
 int main( int argc, char *argv[] )
 {
-	char bu[200];
-	getcwd( bu, 200 );
-	fprintf( stderr, "%s\n", bu );
-
 	Server *srv = srvInit();
 
 	srv->cfg = srvCfgInit();

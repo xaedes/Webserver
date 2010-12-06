@@ -128,6 +128,7 @@ Response *rspInit( ) {
 		handle_error( "rspInit" );
 	memset( rsp, 0, sizeof( Response ) );
 	rsp->message = rspmInit();
+	rsp->strings = vcInit();
 	
 	return rsp;
 }
@@ -150,6 +151,14 @@ void rspFree( Response *rsp )
 		rspmFree( rsp->message );
 	if ( rsp->appendix )
 		rspApdxFree( rsp->appendix );
+	
+	if ( rsp->strings ) {
+		while( rsp->strings->size ) {
+			free( vcPop( rsp->strings ) );
+		}
+		vcFree( rsp->strings );
+	}
+	
 	free( rsp );
 }
 
@@ -194,10 +203,9 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 					rsp->message->http->statusLine->statuscode = STATUS_MOVED_PERM;
 				}
 				dsZeroTerminate( filename );
-				HttpMessageHeader *location = hmhInit2("Location", filename->buffer);
-				HttpMessageHeader *contentLength = hmhInit2("Content-Length","0");
-				vcPush( rsp->message->http->headers, ( void * ) location );
-				vcPush( rsp->message->http->headers, ( void * ) contentLength );
+
+				hmAddHeader( rsp->message->http, "Location", filename->buffer );
+				hmAddHeader( rsp->message->http, "Content-Length", "0" );
 				
 			} else { //if ( fisdir( filename ) )
 				if ( fexists( filename->buffer ) ) {
@@ -207,17 +215,17 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 						rsp->message->http->statusLine->statuscode = STATUS_OK;
 						
 						char *size = itoa( fsize( filename->buffer ) );
-						HttpMessageHeader *contentLength = hmhInit2("Content-Length",size);
-						vcPush( rsp->message->http->headers, ( void * ) contentLength );
+						hmAddHeader( rsp->message->http, "Content-Length", size );
 						
-						ct = dynstrcpy( 0, ct );
+						ct = dynstrcpy( 0, ct );	//kopie anfertigen
 						dynstrcat( &ct, "/" );
 						dynstrcat( &ct, ext );
 						
-						HttpMessageHeader *contentType = hmhInit2( "Content-Type", ct );
-						vcPush( rsp->message->http->headers, ( void * ) contentType );
-						free( size );
-						free( ct );
+						hmAddHeader( rsp->message->http, "Content-Type", ct );
+						
+						vcPush( rsp->strings, size );
+						vcPush( rsp->strings, ct );
+						
 						if ( !rsp->appendix )
 							rsp->appendix = rspApdxInit( cfg->fileBufferSize, filename->buffer );
 						else
@@ -225,21 +233,21 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 						rsp->sendAppdx = 1;
 					} else {	//extension von angeforderter datei ist nicht configuriert
 						rsp->message->http->statusLine->statuscode = STATUS_FORBIDDEN;
-						HttpMessageHeader *contentLength = hmhInit2("Content-Length","0");
-						vcPush( rsp->message->http->headers, ( void * ) contentLength );
+						hmAddHeader( rsp->message->http, "Content-Length", "0" );
 					}
 				} else {
 					rsp->message->http->statusLine->statuscode = STATUS_NOT_FOUND;
-					HttpMessageHeader *contentLength = hmhInit2("Content-Length","0");
-					vcPush( rsp->message->http->headers, ( void * ) contentLength );
+					hmAddHeader( rsp->message->http, "Content-Length", "0" );
 				}
 			} // if ( fisdir( filename ) ) else
 			
-			dsFree( filename );
+			vcPush( rsp->strings, filename->buffer ); 
+			dsFreeKeep( filename );
 		} // if ( strcmp( rsp->rqst->method, "GET" ) == 0 )
 		else {
 			rsp->message->http->statusLine->statuscode = STATUS_BAD_REQUEST;
 			dynstrcpy( &rsp->rqst->httpversion, "HTTP/1.0" );
+			hmAddHeader( rsp->message->http, "Content-Length", "0" );
 		}
 	} //if <legal request http version > else
 	

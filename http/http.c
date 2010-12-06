@@ -73,7 +73,8 @@ HttpMessage *hmInit()
 	memset( hm, 0, sizeof( HttpMessage ) );
 	
 	hm->statusLine = hslInit();
-	hm->headers = vcInit();
+	hm->headerNames = vcInit();
+	hm->headerValues = vcInit();
 	
 	return hm;
 }
@@ -84,8 +85,11 @@ HttpMessage* hmReset( HttpMessage* hm )
 	//hrlReset( hm->requestLine );
 	
 	/** \todo richtigen reset einführen */
-	while( hm->headers->size ) {
-		hmhFree( ( HttpMessageHeader * ) vcPop( hm->headers ) );
+	while( hm->headerNames->size ) {
+		vcPop( hm->headerNames );
+	}
+	while( hm->headerValues->size ) {
+		vcPop( hm->headerValues );
 	}
 	
 	return hm;
@@ -97,18 +101,24 @@ void hmFree( HttpMessage* hm )
 	if ( !hm ) 
 		return;
 	
-	if ( hm->headers ) {
-		int i;
-		for ( i = 0; i < hm->headers->size; ++i ) {
-			hmhFree( ( HttpMessageHeader* ) hm->headers->items[i] );
-		}
-		vcFree( hm->headers );
-	}
+	if ( hm->headerNames ) 
+		vcFree( hm->headerNames );
+	if ( hm->headerValues ) 
+		vcFree( hm->headerValues );
+	
 	if ( hm->statusLine )
 		hslFree( hm->statusLine );
 	
 	free( hm );
 }
+
+HttpMessage* hmAddHeader(HttpMessage* hm, const char* name, const char* value)
+{
+	vcPush( hm->headerNames, name );
+	vcPush( hm->headerValues, value );
+	return hm;
+}
+
 
 DString* hmToString( HttpMessage* hm, DString *dest )
 {
@@ -120,10 +130,9 @@ DString* hmToString( HttpMessage* hm, DString *dest )
 	dsCatString( dest, "\r\n" );
 	
 	int i;
-	for ( i = 0; i < hm->headers->size ; ++i ) {
-		HttpMessageHeader *header = ( HttpMessageHeader * ) hm->headers->items[i];
-		hmhToString( header, dest );
-		dsCatString( dest, "\r\n" );
+	for ( i = 0; i < hm->headerNames->size ; ++i ) {
+		
+		dsCatF( dest, "%s: %s\r\n", hm->headerNames->items[i], hm->headerValues->items[i] );
 	}
 	
 	dsCatString( dest, "\r\n" );
