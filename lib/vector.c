@@ -57,8 +57,9 @@ void vcDel( Vector *vc, int i )
 
 void *vcPop( Vector *vc )
 {
-	void *p = vc->items[--vc->size];
-	vc->items[--vc->size] = 0;
+	--vc->size;
+	void *p = vc->items[vc->size];
+	vc->items[vc->size] = 0;
 	vcShrink( vc );
 	return p;
 }

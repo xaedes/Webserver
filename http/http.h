@@ -184,7 +184,8 @@ void hrlFree( HttpRequestLine *hrl );
 typedef struct HttpMessage {
 	HttpStatusLine *statusLine;		/**<  */
 	HttpRequestLine *requestLine;	/**<  */
-	Vector *headers;				/**<  */
+	Vector *headerNames;				/**<  */
+	Vector *headerValues;			/**<  */
 } HttpMessage;
 
 /** \memberof HttpMessage
@@ -212,6 +213,8 @@ HttpMessage *hmReset( HttpMessage *hm );
  */
 void hmFree( HttpMessage *hm );
 
+
+HttpMessage *hmAddHeader( HttpMessage *hm, const char *name, const char *value );
 
 
 /** \memberof HttpMessage
