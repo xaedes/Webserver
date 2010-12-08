@@ -3,7 +3,7 @@
 
 #include "lib/vector.h"
 
-/**
+/** \class Lines
  * Contains multiple lines.
  * The lines are managed as a double linked list.
  * Each element points to a c string representing the line
