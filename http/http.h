@@ -176,12 +176,18 @@ HttpRequestLine *hrlReset( HttpRequestLine *hrl );
  */
 void hrlFree( HttpRequestLine *hrl );
 
+typedef enum HttpMessageType {
+	HTTP_MESSAGE_INVALID,
+	HTTP_MESSAGE_REQUEST,
+	HTTP_MESSAGE_RESPONSE 
+} HttpMessageType;
 
 
 /**
  * HTTP Message (without body)
  */
 typedef struct HttpMessage {
+	HttpMessageType type;
 	HttpStatusLine *statusLine;		/**<  */
 	HttpRequestLine *requestLine;	/**<  */
 	Vector *headerNames;				/**<  */

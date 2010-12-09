@@ -4,6 +4,7 @@
 #include "lib/lines.h"
 #include "lib/vector.h"
 #include "lib/dstring.h"
+#include "http/http.h"
 
 /**
  * Saves and parses an incoming request from a client
@@ -16,6 +17,8 @@ typedef struct Request {
 	char *method;		/**< the parsed method from the request line */
 	char *uri;			/**< the parsed uri from the request line */
 	char *httpversion;	/**< the parsed httpversion from the request line */
+	HttpMessage *http;
+	Vector *strings;	/**< Saves pointers to strings that have to be free'd */
 	//HTTPHeader *headers;
 } Request;
 

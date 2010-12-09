@@ -37,27 +37,31 @@ Request *rqstInit( )
 
 	/**< \todo make the initial buffer size configurable */
 	rqst->buffer = dsInit( 512 );
+	rqst->http = hmInit();
+	rqst->http->type = HTTP_MESSAGE_REQUEST;
+	rqst->strings = vcInit();
 
 	return rqst;
 }
 
 //char *parseToken( char *from, char *until
 
-int parseWhileNoSP( char *from, char *end, char **dest, char **newpos )
+
+int parseWhileNo( char *from, char *end, const char endChar, char **dest, char **newpos )
 {
 	int pos = 0;
 	int max = imax( 0, ( int )( end - from ) );
 
 	if ( !dest )
-		handle_fail( "parseWhileNoSP: destination pointer is null pointer" );
+		handle_fail( "parseWhileNo: destination pointer is null pointer" );
 
 	*dest = realloc( *dest, max + 1 );
 
 	if ( !( *dest ) )
-		handle_error( "parseWhileNoSP" );
+		handle_error( "parseWhileNo" );
 
 	while (( pos < max ) &&
-	        ( from[pos] != ' ' ) ) {
+	        ( from[pos] != endChar ) ) {
 		( *dest )[pos] = from[pos];
 		++pos;
 	}
@@ -65,10 +69,15 @@ int parseWhileNoSP( char *from, char *end, char **dest, char **newpos )
 	( *dest )[pos] = 0; //termination
 
 	*newpos = from + pos + 1;
-	cstring_memtrim( dest );
 
 	return pos;
 }
+
+int parseWhileNoSP( char *from, char *end, char **dest, char **newpos )
+{
+	return parseWhileNo( from, end, ' ', dest, newpos );
+}
+
 
 Request *rqstParseRequestLine( Request *rqst )
 {
@@ -76,7 +85,6 @@ Request *rqstParseRequestLine( Request *rqst )
 	char *pos = ln;
 	int len = strlen( ln );
 	char *end = pos + len;
-	int max;
 
 	parseWhileNoSP( pos, end, &rqst->method, &pos );
 	parseWhileNoSP( pos, end, &rqst->uri, &pos );
@@ -86,10 +94,63 @@ Request *rqstParseRequestLine( Request *rqst )
 	return rqst;
 }
 
+Request *rqstParseHeader( Request *rqst, int firstLine, int lastLine )
+{
+	Lines *lns = rqst->lns;
+	char *pos = lns->items[firstLine];
+	int len = strlen( lns->items[firstLine] );
+	char *end = pos + len;
+	
+	char *name = 0;
+	
+	parseWhileNo( pos, end, ':', &name, &pos );
+	
+	
+	DString *value = dsInit( 128 );
+	int s = strspn( pos, " \t" );
+	dsCpyString( value, pos + s );
+	
+	int i = 0;
+	for ( i = firstLine + 1; i <= lastLine; ++i ) {
+		int s = strspn( lns->items[i], " \t" );
+
+		dsCatChar( value, ' ' );
+		dsCatString( value, lns->items[i] + s );
+	}
+	
+	vcPush( rqst->strings, name );
+	vcPush( rqst->strings, value->buffer );
+	
+	hmAddHeader(rqst->http, name, value->buffer );
+	
+	dsFreeKeep( value );
+	
+	return rqst;
+}
+
+Request *rqstParseHeaders( Request *rqst )
+{
+	int i = 1;
+	Lines *lns = rqst->lns;
+	while( i < lns->size ) {
+		int j = i + 1;
+		while( ( j < lns->size ) && 
+			   ( ( ((char *)lns->items[j])[0] == ' ' ) ||
+				 ( ((char *)lns->items[j])[0] == '\t' ) ) ) {
+			++j;
+		}
+		rqstParseHeader( rqst, i, j - 1 );
+		++i;
+	}
+	
+	return rqst;
+}
+
 Request *rqstParse( Request *rqst )
 {
 	rqstParseRequestLine( rqst );
 	//TODO : parse headers
+	rqstParseHeaders( rqst );
 }
 
 void rqstFree( Request *rqst )
@@ -108,6 +169,16 @@ void rqstFree( Request *rqst )
 
 	if ( rqst->buffer )
 		dsFree( rqst->buffer );
+	
+	if ( rqst->http )
+		hmFree( rqst->http );
+
+	if ( rqst->strings ) {
+		while( rqst->strings->size ) {
+			free( vcPop( rqst->strings ) );
+		}
+		vcFree( rqst->strings );
+	}
 	
 	free( rqst );
 }

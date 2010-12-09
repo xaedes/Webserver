@@ -63,6 +63,29 @@ const char *hscReasonphrase( HttpStatuscode status )
 	return str;
 }
 
+HttpRequestLine* hrlInit()
+{
+	HttpRequestLine * hrl = malloc( sizeof( HttpRequestLine ) );
+	if ( ! hrl ) {
+		handle_error( "hrlInit" );
+	}
+	memset( hrl, 0, sizeof( HttpRequestLine ) );
+	
+	
+	return hrl;
+}
+
+void hrlFree(HttpRequestLine* hrl)
+{
+	free( hrl );
+}
+
+HttpRequestLine* hrlReset(HttpRequestLine* hrl)
+{
+	memset( hrl, 0, sizeof( HttpRequestLine ) );
+	return hrl;
+}
+
 
 HttpMessage *hmInit()
 {
@@ -73,6 +96,7 @@ HttpMessage *hmInit()
 	memset( hm, 0, sizeof( HttpMessage ) );
 	
 	hm->statusLine = hslInit();
+	hm->requestLine = hrlInit();
 	hm->headerNames = vcInit();
 	hm->headerValues = vcInit();
 	
@@ -82,7 +106,7 @@ HttpMessage *hmInit()
 HttpMessage* hmReset( HttpMessage* hm )
 {
 	hslReset( hm->statusLine );
-	//hrlReset( hm->requestLine );
+	hrlReset( hm->requestLine );
 	
 	/** \todo richtigen reset einführen */
 	while( hm->headerNames->size ) {
@@ -91,6 +115,8 @@ HttpMessage* hmReset( HttpMessage* hm )
 	while( hm->headerValues->size ) {
 		vcPop( hm->headerValues );
 	}
+	
+	hm->type = HTTP_MESSAGE_INVALID;
 	
 	return hm;
 }
@@ -108,6 +134,8 @@ void hmFree( HttpMessage* hm )
 	
 	if ( hm->statusLine )
 		hslFree( hm->statusLine );
+	if ( hm->requestLine )
+		hrlFree( hm->requestLine );
 	
 	free( hm );
 }
@@ -125,7 +153,20 @@ DString* hmToString( HttpMessage* hm, DString *dest )
 	if ( !hm )
 		return 0;
 	
-	hslToString( hm->statusLine, dest );
+	switch( hm->type ) {
+	case HTTP_MESSAGE_INVALID:	
+		handle_fail("hmToString: invalid message type");
+		break;
+	case HTTP_MESSAGE_RESPONSE:
+		hslToString( hm->statusLine, dest );
+		break;
+	case HTTP_MESSAGE_REQUEST:
+		handle_fail("hmToString: not applicable to message type");
+		break;
+	default:
+		handle_fail("hmToString: message type not implemented");
+		break;
+	}
 	
 	dsCatString( dest, "\r\n" );
 	
