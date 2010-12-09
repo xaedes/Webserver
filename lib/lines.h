@@ -87,7 +87,9 @@ Lines *lnsDeleteLine( Lines *lns, int i );
  * Parses the given memory area into the lines object.
  * All Lines point to locations in the given string after this.
  * This method will modify the given memory area!
- * All CR and LF will be replaced by 0
+ * All CR and LF will be replaced by 0.
+ * The given string should be zero terminated and size must not 
+ * include the zero.
  * 
  * \param lns targeted Lines instance
  * \param str pointer to memory area

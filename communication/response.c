@@ -93,6 +93,7 @@ ResponseMessage *rspmInit()
 	}
 	memset( rspm, 0, sizeof( ResponseMessage ) );
 	rspm->http = hmInit();
+	rspm->http->type = HTTP_MESSAGE_RESPONSE;
 	rspm->data = dsInit(256);
 	return rspm;
 }
@@ -115,6 +116,7 @@ ResponseMessage* rspmReset( ResponseMessage* rspm )
 {
 	rspm->sent = 0;
 	hmReset( rspm->http );
+	rspm->http->type = HTTP_MESSAGE_RESPONSE;
 	
 	dsCpyChars( rspm->data, 0, 0 );
 	
@@ -170,12 +172,15 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 		handle_fail( "rspBuild: server config null poiner" );
 
 	
-	if ( strcmp( rsp->rqst->httpversion, "" ) == 0 )
+	if ( strcmp( rsp->rqst->httpversion, "" ) == 0 ) {
 		dynstrcpy( &rsp->rqst->httpversion, "HTTP/1.0" );
+		rsp->message->http->statusLine->httpversion = HTTP_VERSION_1_0;
+	}
 	
 	if ( ! (( strcmp( rsp->rqst->httpversion, "HTTP/1.1") == 0 ) ||
 			( strcmp( rsp->rqst->httpversion, "HTTP/1.0") == 0 ) ) ) {
 		rsp->message->http->statusLine->statuscode = STATUS_BAD_REQUEST;
+		rsp->message->http->statusLine->httpversion = HTTP_VERSION_1_0;
 		dynstrcpy( &rsp->rqst->httpversion, "HTTP/1.0" );
 	} else {
 		rsp->message->http->statusLine->httpversion = httpVersionFromString( rsp->rqst->httpversion );

@@ -131,54 +131,15 @@ Lines* lnsParse( Lines *lns, char* str, int size )
 	lnsAdd( lns, str );	//first line points to begin of the string
 	while ( i < size ) {
 		switch( str[i] ) {
-		case '\r':
-			str[i] = '\0';
-			if ( i > 0 ) {
-				switch( str[i-1] ) {
-				case '\r':	//CR CR - after first CR begins a new line
-					lnsAdd( lns, str + i );
-					break;
-				case '\n':	//LF CR - after LF begins a new line
-					lnsAdd( lns, str + i );
-					break;
-				default:
-					break;
-				}
-			} else if ( i + 1 < size ) {
-				if ( ( str[i+1] != '\r' ) &&
-					 ( str[i+1] != '\n' ) ) {
-					lnsAdd( lns, str + i + 1 );
-				}
-				
-			} else { //i == 0 | size == 1
-				/* first line already lined up */
-			}
-			break;
 		case '\n':
 			str[i] = '\0';
-			if ( i > 0 ) {
-				switch( str[i-1] ) {
-				case '\r':	//CR LF - after CR LF begins a new line
-					if ( i + 1 < size )
-						lnsAdd( lns, str + i + 1 );
-					break;
-				case '\n':	//LF LF - after first LF begins a new line
-					lnsAdd( lns, str + i );
-					break;
-				default:
-					break;
-				}
-			} else if ( i + 1 < size ) {
-				if ( ( str[i+1] != '\r' ) &&
-					 ( str[i+1] != '\n' ) ) {
-					lnsAdd( lns, str + i + 1 );
-				}
-				
-			} else { //i == 0 | size == 1
-				/* first line already lined up */
-			}
+			lnsAdd( lns, str + i + 1 );
+			break;
+		case '\r':
+			str[i] = '\0';
 			break;
 		default:
+			/* void */
 			break;
 		}
 		++i;
