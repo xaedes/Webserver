@@ -67,12 +67,11 @@ void consDel( Connections *cons, int i )
 {
 	if ( cons->size )
 	{
-		consConnectionReset( cons, i );
-		//consConnectionFree( cons, i );
 		
+		//*
+		consConnectionReset( cons, i );
 		
 		//letztes element mit zu löschender stelle tauschen
-		
 		Client tmpClient = cons->clients[i];
 		struct pollfd tmpPoll = cons->poll[i];
 		
@@ -81,47 +80,96 @@ void consDel( Connections *cons, int i )
 		
 		cons->clients[cons->size-1] = tmpClient;
 		cons->poll[cons->size-1] = tmpPoll;
-
-/*		memset( cons->clients + cons->size-1, 0, sizeof( Client ) );
-		memset( cons->poll + cons->size-1, 0, sizeof( struct pollfd ) );*/
+		/*/
 		
+		consConnectionFree( cons, i );
+		
+		
+		//letztes element mit zu löschender stelle tauschen
+		
+		cons->clients[i] = cons->clients[cons->size-1];
+		cons->poll[i] = cons->poll[cons->size-1];
+		
+		memset( cons->clients + cons->size-1, 0, sizeof( Client ) );
+		memset( cons->poll + cons->size-1, 0, sizeof( struct pollfd ) );
+		
+		//*/
 		--cons->size;
 	}
 }
 
 Connections* consConnectionReset(Connections* cons, int i)
 {
-	consConnectionFree( cons, i );
-	consConnectionInit( cons, i );
-	//consInit( cons, i );
+	Client *client = &cons->clients[i];
+	
+	
+	memset( cons->poll + i, 0, sizeof( struct pollfd ) );
+	
+	
+	
+	//int sfd;
+	
+	if ( client->sfd )
+		close( client->sfd ); 
+	client->sfd=0;
+	
+	//struct sockaddr_in addr;
+	
+	memset( &client->addr, 0, sizeof( struct sockaddr_in ) );
+	
+	//Lines *lnsRead;
+	
+	if ( client->lnsRead ) 
+		lnsClear( client->lnsRead );
+	else
+		client->lnsRead = lnsInit();
+	
+	
+	//Request *rqst;
+	
+	if ( client->rqst )
+		rqstReset( client->rqst );
+	else
+		client->rqst = rqstInit();
+	
+	client->rqst->lns = client->lnsRead;
+		
+	//Response *rsp;
+
+	if ( client->rsp )
+		rspReset( client->rsp ); 
+	else
+		client->rsp = rspInit();
+	client->rsp->rqst = client->rqst;
+	
+	
+	//IO_Status ios;
+	
+	client->ios = ios_receive;
+	
+	//int initialized;
+	
+	client->initialized = 1;
+	
+	
+}
+
+Connections *consConnectionFree( Connections *cons, int i )
+{
+	Client *client = &cons->clients[i];
+	
+	if ( client->sfd )
+		close( client->sfd ); 
+	if ( client->lnsRead ) 
+		lnsFree( client->lnsRead );
+	if ( client->rsp )
+		rspFree( client->rsp ); 
+	if ( client->rqst )
+		rqstFree( client->rqst );
+	
+	memset( client, 0, sizeof( Client ) );
 	
 	return cons;
-	
-// 	Client *client = &cons->clients[i];
-// 	
-// 	cons->poll[i].fd = 0;
-// 	cons->poll[i].revents = 0;
-// 	//cons->clients[i].addr = addr;
-// 	
-// 	client->ios == ios_receive; //starteinstellung
-// 	
-// 	
-// 	rspReset( client->rsp );
-// 
-// 	if ( client->sfd )
-// 		close( client->sfd ); 
-// 	if ( client->lnsRead ) 
-// 		lnsFree( client->lnsRead );
-// 	if ( client->rqst )
-// 		rqstFree( client->rqst );
-// 	
-// 	client->sfd = 0;
-// 	client->lnsRead = 0;
-// 	client->rqst = 0;
-// 	
-// 	return cons;
-// 
-	
 }
 
 Connections* consConnectionInit(Connections* cons, int i)
@@ -180,27 +228,6 @@ Connections *consConnectionSetIOStatus( Connections *cons, int i, IO_Status ios 
 	return cons;
 }
 
-Connections *consConnectionFree( Connections *cons, int i )
-{
-	Client *client = &cons->clients[i];
-	
-	if ( client->sfd )
-		close( client->sfd ); 
-	if ( client->lnsRead ) 
-		lnsFree( client->lnsRead );
-	if ( client->rsp )
-		rspFree( client->rsp ); 
-	if ( client->rqst )
-		rqstFree( client->rqst );
-	
-	memset( client, 0, sizeof( Client ) );
-	client->sfd = 0;
-	client->lnsRead = 0;
-	client->rsp = 0;
-	client->rqst = 0;
-	
-	return cons;
-}
 
 void consFree( Connections *cons )
 {

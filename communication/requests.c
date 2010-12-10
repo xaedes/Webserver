@@ -207,7 +207,7 @@ void rqstFree( Request *rqst )
 
 Request* rqstReset(Request* rqst)
 {
-	dsCpyChars( rqst->buffer, 0, 0 );
+	rqst->buffer->size = 0;
 	free( rqst->method );
 	free( rqst->uri );
 	free( rqst->httpversion );

@@ -8,7 +8,7 @@
 
 #include "lib/vector.h"
 
-#define DS_RECYCLE
+#define DS_RECYCLE_
 
 #ifdef DS_RECYCLE
 
