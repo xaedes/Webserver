@@ -68,9 +68,12 @@ void *vcPop( Vector *vc )
 
 void vcClear(Vector* vc)
 {
+	memset( vc->items, 0, sizeof( void * ) * vc->size );
+	vc->size = 0;
+	/*
 	while( vc->size ) {
 		vcPop( vc );
-	}
+	}*/
 }
 
 

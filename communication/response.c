@@ -29,13 +29,29 @@ ResponseAppendix *rspApdxInit( int bufSize, char *filename )
 
 ResponseAppendix* rspApdxReset( ResponseAppendix* rspApdx )
 {
+	//DString *filename;
+	rspApdx->filename->size = 0;
+	
+	//FILE *file;
 	if ( rspApdx->file )
 		fclose( rspApdx->file );
 	rspApdx->file = 0;
-	dsCpyChars( rspApdx->filename, 0, 0 );
-	rspApdx->eof = 0;
-	rspApdx->sent = 0;
+	
+	//char *buffer;
+	//nothing to do
+	
+	//int bufSize;
+	//nothing to do
+	
+	//int bufFill;
 	rspApdx->bufFill = 0;
+	
+	//int sent;
+	rspApdx->sent = 0;
+	
+	//int eof;
+	rspApdx->eof = 0;
+	
 	return rspApdx;
 }
 
@@ -114,11 +130,15 @@ void rspmFree( ResponseMessage* rspm )
 
 ResponseMessage* rspmReset( ResponseMessage* rspm )
 {
-	rspm->sent = 0;
+	//HttpMessage *http;
 	hmReset( rspm->http );
 	rspm->http->type = HTTP_MESSAGE_RESPONSE;
+	//DString *data;
+	rspm->data->size = 0;
+	//int sent;
+	rspm->sent = 0;
 	
-	dsCpyChars( rspm->data, 0, 0 );
+	
 	
 	return rspm;
 }
@@ -138,19 +158,34 @@ Response *rspInit( ) {
 
 Response* rspReset( Response* rsp )
 {
-	rsp->sendState = 0;
-	rsp->sendAppdx = 0;
-	rsp->rqst = 0;
-	if ( rsp->appendix )
-		rspApdxReset( rsp->appendix );
-	rspmReset( rsp->message );
-	
+	//Vector *strings;
 	while( rsp->strings->size ) {
 		free( vcPop( rsp->strings ) );
 	}
+
+	//Vector *dstrings;
 	while( rsp->dstrings->size ) {
 		dsFree( vcPop( rsp->dstrings ) );
 	}
+	
+	//Request *rqst;
+	rsp->rqst = 0;
+	
+	//ResponseMessage *message;
+	rspmReset( rsp->message );
+	
+	//int sendState;
+	rsp->sendState = 0;
+	
+	//int sendAppdx;
+	rsp->sendAppdx = 0;
+	
+	//ResponseAppendix *appendix;
+	if ( rsp->appendix )
+		rspApdxReset( rsp->appendix );
+
+	
+	
 	
 	return rsp;
 }
