@@ -31,6 +31,7 @@ Vector *vcShrink( Vector *vc )
 {
 	if ( vc->size == vc->reserved/4 ) {
 		vc->reserved /= 2;
+		vc->reserved = vc->reserved > 32 ? vc->reserved : 32;
 		vc->items = realloc( vc->items, sizeof( void * ) * vc->reserved );
 		if ( !vc->items )
 			handle_error( "vcShrink" );
@@ -46,7 +47,8 @@ int vcAdd( Vector *vc )
 
 void vcPush( Vector* vc, void* p )
 {
-	vc->items[ vcAdd( vc ) ] = p;
+	int i = vcAdd( vc );
+	vc->items[i] = p;
 }
 
 void vcDel( Vector *vc, int i )
@@ -63,6 +65,14 @@ void *vcPop( Vector *vc )
 	vcShrink( vc );
 	return p;
 }
+
+void vcClear(Vector* vc)
+{
+	while( vc->size ) {
+		vcPop( vc );
+	}
+}
+
 
 void vcFree( Vector *vc )
 {

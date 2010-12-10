@@ -6,6 +6,98 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "lib/vector.h"
+
+#define DS_RECYCLE
+
+#ifdef DS_RECYCLE
+
+
+Vector *dsRecycled = 0;
+const int dsNRecycleSizes = 4;
+int dsRecycleSizes[4] = { 32, 128, 512, 2048 };
+// const int dsNRecycleSizes = 1;
+// int dsRecycleSizes[1] = { 2048 };
+
+
+void dsInitRecycle() 
+{
+	
+	dsRecycled = vcInit();
+	int i = 0;
+	for ( i = 0; i < dsNRecycleSizes; ++i ) {
+		vcPush( dsRecycled, vcInit() );
+	}
+}
+
+DString *dsGetRecycled( int reserved ) 
+{
+	if ( !dsRecycled )
+		dsInitRecycle();
+	int i = 0;
+	for ( i = 0; i < dsNRecycleSizes; ++i ) {
+		if ( ( reserved <= dsRecycleSizes[i] ) && ( ((Vector*)dsRecycled->items[i])->size ) ) {
+			return vcPop( dsRecycled->items[i] );
+		}
+	}
+	return 0;
+}
+
+int dsRecycle( DString* ds ) 
+{
+	if ( !dsRecycled )
+		dsInitRecycle();
+
+	int i = 0;
+	for ( i = 0; i < dsNRecycleSizes; ++i ) {
+		if ( ds->reserved <= dsRecycleSizes[i] ) {
+			ds->size = 0;
+			vcPush( dsRecycled->items[i], ds );
+			return 1;
+		}
+	}
+	return 0;	//nicht recycled
+}
+
+DString *dsInit ( int reserve ) 
+{
+	DString *ds = dsGetRecycled( reserve );
+	
+	if ( ds )
+		return ds;
+	
+	ds = malloc( sizeof( DString ) );
+	if ( !ds )
+		handle_error( "dsInit" );
+	
+	memset( ds, 0, sizeof( DString ) );
+	
+	ds->size = 0;
+	ds->reserved = reserve;
+	ds->buffer = malloc( ds->reserved );
+	if ( !ds->buffer ) 
+		handle_error( "dsInit" );
+	
+	return ds;
+}
+
+
+void dsFree(DString* ds)
+{
+	if ( !dsRecycle( ds ) ) {
+		free( ds->buffer );
+		free( ds );
+	}
+}
+
+void dsFreeKeep ( DString *ds )
+{
+	//kein recycle möglich
+	free( ds );
+}
+
+#else
+
 DString *dsInit ( int reserve ) {
 	DString *ds = malloc( sizeof( DString ) );
 	if ( !ds )
@@ -21,6 +113,20 @@ DString *dsInit ( int reserve ) {
 	
 	return ds;
 }
+
+
+void dsFree(DString* ds)
+{
+	free( ds->buffer );
+	free( ds );
+}
+
+void dsFreeKeep ( DString *ds )
+{
+	free( ds );
+}
+
+#endif
 
 DString *dsEnlarge( DString *ds, int n ) {
 	int changed = 0;
@@ -238,16 +344,6 @@ char dsLast( DString *ds )
 }
 
 
-void dsFree(DString* ds)
-{
-	free( ds->buffer );
-	free( ds );
-}
-
-void dsFreeKeep ( DString *ds )
-{
-	free( ds );
-}
 
 
 void dsMemoryTrim(DString* ds)
@@ -259,6 +355,19 @@ void dsMemoryTrim(DString* ds)
 }
 
 
+DString* itods(int i)
+{
+	char buf[20];
+	int k = 0;
+	while ( i || !k ) {
+		buf[19-k]= '0'+(i % 10);
+		i /= 10;
+		++k;
+	}
+	DString *ds = dsInit( 20 );
+	dsCpyChars( ds, &buf[20-k], k );
+	return ds;
+}
 
 
 

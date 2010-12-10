@@ -22,35 +22,12 @@ int lnsCount( Lines *lns )
 
 Lines *lnsAdd( Lines *lns, char *ln )
 {
+	if ( ln == 0)
+		handle_fail( "PENG" );
 	vcPush( lns, ln );
 	return lns;
 }
 
-/*
-Lines *lnsAppend( Lines *lns, char *str, int size )
-{
-	if ( lnsIsEmpty( lns ) )
-	{
-		Line *ln = lnInit( );
-		lnsAdd( lns, ln );
-	}
-	lnAppend( lns->last, str, size );
-	//lnTrim( lns->last );
-	return lns;
-}
-*/
-
-/*
-Lines *lnsAppendLine( Lines *lns, char *str, int size )
-{
-	Line *ln = lnInit( );
-	lnAppend( ln, str, size );
-	//lnTrim( ln );
-	lnsAdd( lns, ln );
-	
-	return lns;
-}
-*/
 
 Lines* lnsDeleteLine( Lines* lns, int i )
 {
@@ -58,76 +35,12 @@ Lines* lnsDeleteLine( Lines* lns, int i )
 	return lns;
 }
 
-/*
-Lines *lnsAddBuffer( Lines *lns, char *buffer, int size)
-{
-	char *last;
-	char *pos;
-	last = pos = buffer;
-	do
-	{
-		switch ( *pos ) {
-		case '\n':
-			if ( lns->tmp == '\r' ) {//crlf (http)
-				lnsAppend( lns, last, pos - last - 1 );	
-			} else {//lf (unix, be tolerant)
-				lnsAppend( lns, last, pos - last ); 
-			}
-			if ( !lns->head || ( strlen( lns->head->str ) > 0) )
-				lnsAdd( lns, lnInit() ); //neue zeile einfügen
-			last = pos + 1;
-			break;
-		default:
-			
-			break;
-		}
-		lns->tmp = *pos;
-		pos ++;
-	} while ( (int)( pos - buffer ) < size );
-	if ( (int)( pos - buffer ) >= size ) {
-		if ( lns->tmp == '\r' ) { //letztes zeichen
-			//rest davor ausgeben
-			lnsAppend( lns, last, pos - last - 1 );
-		} else {
-			lnsAppend( lns, last, pos - last );
-		}
-	}
-	return lns;
-}
-*/
-// Lines *lnsAddBuffer( Lines *lns, char *buffer, int size)
-// {
-// 	char *last;
-// 	char *pos;
-// 	last = buffer;
-// 	do
-// 	{
-// 		
-// 		pos = index( last, '\n' );
-// 		if ( pos ) { //ein zeilenumbruch wurde gefunden
-// 			lnsAppend( lns, last, pos - last ); //von last bis zum zeilenumbruch an zeile anfügen
-// 			lnsAdd( lns, lnInit() ); //neue zeile einfügen
-// 		} else { //kein zeilenumbruch mehr gefunden -> bufferende
-// 			lnsAppend( lns, last, size - (int) last + (int) buffer ); //von last bis zum bufferende an zeile anfügen
-// 		}
-// 		last = pos + 1;
-// 	} while ( pos && (((int)last - (int)buffer ) < size) );
-// 	
-// 	return lns;
-// }
-
-/*
-int lnsRqstComplete( Lines *lns )
-{
-	if ( lnsCount( lns ) < 2 )
-		return 0;
-	return ( ( strlen( lns->last->str ) == 0 ) && ( strlen( lns->last->prev->str ) == 0 ) );
-}
-*/
 
 Lines* lnsParse( Lines *lns, char* str, int size )
 {
 	int i = 0;
+	if ( lns->size )
+		handle_fail( "lnsParse: lns not empty" );
 	lnsAdd( lns, str );	//first line points to begin of the string
 	while ( i < size ) {
 		switch( str[i] ) {
@@ -146,6 +59,11 @@ Lines* lnsParse( Lines *lns, char* str, int size )
 	}
 	
 	return lns;
+}
+
+Lines* lnsClear(Lines* lns)
+{
+	vcClear( lns );
 }
 
 

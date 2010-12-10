@@ -109,12 +109,8 @@ HttpMessage* hmReset( HttpMessage* hm )
 	hrlReset( hm->requestLine );
 	
 	/** \todo richtigen reset einführen */
-	while( hm->headerNames->size ) {
-		vcPop( hm->headerNames );
-	}
-	while( hm->headerValues->size ) {
-		vcPop( hm->headerValues );
-	}
+	vcClear( hm->headerNames );
+	vcClear( hm->headerValues );
 	
 	hm->type = HTTP_MESSAGE_INVALID;
 	

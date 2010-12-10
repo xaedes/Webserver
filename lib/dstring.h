@@ -236,4 +236,14 @@ void dsFreeKeep ( DString *ds );
  */
 void dsMemoryTrim ( DString *ds );
 
+
+/** \memberof DString
+ * 
+ * Converts an integer to a dstring 
+ * 
+ * \param integer 
+ * \return DString instance
+ */
+DString *itods( int i );
+
 #endif

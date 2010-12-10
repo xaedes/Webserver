@@ -13,12 +13,14 @@ typedef struct Request {
 	int lastNCR;
 	int lastNLF;
 	DString *buffer;	/**< Buffer to read to */
+	DString *backup;	
 	Lines *lns;			/**< Lines to parse from */
 	char *method;		/**< the parsed method from the request line */
 	char *uri;			/**< the parsed uri from the request line */
 	char *httpversion;	/**< the parsed httpversion from the request line */
 	HttpMessage *http;
 	Vector *strings;	/**< Saves pointers to strings that have to be free'd */
+	Vector *dstrings;	/**< Saves pointers to dstrings that have to be free'd */
 	//HTTPHeader *headers;
 } Request;
 

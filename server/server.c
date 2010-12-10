@@ -68,6 +68,7 @@ Server *srvStart( Server *srv )
 		handle_error( "srvStart" );
 
 	int con = consAdd( srv->cons );
+	consConnectionInit( srv->cons, con );
 	consConnectionSetup( srv->cons, con , srv->socket, addr );
 	consConnectionSetIOStatus( srv->cons, con, ios_receive );	//for accepting clients via poll()
 	
@@ -93,6 +94,8 @@ void srvAcceptClient( Server *srv )
 			
 		} else {
 			int con = consAdd( srv->cons );
+			if ( !srv->cons->clients[con].initialized )
+				consConnectionInit( srv->cons, con );
 			consConnectionSetup( srv->cons, con , fd, addr );
 			consConnectionSetIOStatus( srv->cons, con, ios_receive );
 			
@@ -192,6 +195,7 @@ int srvResponseCycle( Server* srv, int i )
 	return 1;	//weitermachen
 }
 
+
 int srvRequestCycle( Server* srv, int i )
 {
 	Client *client = &srv->cons->clients[i];
@@ -219,16 +223,19 @@ int srvRequestCycle( Server* srv, int i )
 
 		if ( msgSize < len ) {
 			//Message Ende erreicht - Message Body fängt an
+			
+			
+			
 			lnsParse( client->lnsRead, client->rqst->buffer->buffer, client->rqst->buffer->size );
 			rqstParse( client->rqst );
 			LOG( "Client request complete:\n", srv->cons->size);
 			LOG( "method: '%s' | uri: '%s' | http-version: '%s'\n", client->rqst->method, client->rqst->uri, client->rqst->httpversion );
 
-			client->rsp = rspInit();
-			client->rsp->rqst = client->rqst;
-			client->rsp = rspBuild( client->rsp, srv->cfg );
-			//LOG( "Response built: \nLength: %d\n%s\n", srv->cons->clients[i].rsp->dss->size, srv->cons->clients[i].rsp->dss->buffer );
+			//client->rsp = rspInit();
+			//client->rsp->rqst = client->rqst;
 			consConnectionSetIOStatus( srv->cons, i, ios_send );
+			rspBuild( client->rsp, srv->cfg );
+			//LOG( "Response built: \nLength: %d\n%s\n", srv->cons->clients[i].rsp->dss->size, srv->cons->clients[i].rsp->dss->buffer );
 		} else if ( msgSize == len ) {
 			//kein CRLFCRLF enthalten
 		}

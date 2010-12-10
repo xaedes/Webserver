@@ -46,31 +46,6 @@ int lnsCount( Lines *lns );
 
 Lines *lnsAdd( Lines *lns, char *ln );
 
-/** \memberof Lines
- * \callergraph
- * \callgraph
- * 
- * Appends the given string with a specific length to the 
- * last line. If lns is empty, a new line will be created.
- * 
- * \param lns targeted Lines instance
- * \param str string
- * \param size string length
- * \return targeted Lines instance
- */
-//Lines *lnsAppend( Lines *lns, char *str, int size );
-
-/** \memberof Lines
- * 
- * Appends the given string with a specific length as a new 
- * line at the end. 
- * 
- * \param lns targeted Lines instance
- * \param str string
- * \param size string length
- * \return targeted Lines instance
- */
-//Lines *lnsAppendLine( Lines *lns, char *str, int size );
 
 /** \memberof Lines
  * 
@@ -98,29 +73,7 @@ Lines *lnsDeleteLine( Lines *lns, int i );
  */
 Lines *lnsParse( Lines *lns, char *str, int size );
 
-/** \memberof Lines
- * 
- * Appends the content of the buffer to the lines. CRLF and LF 
- * will be recognized and trigger a new line.
- * 
- * \todo add a cancel condition to stop parsing when CRLF CRLF is reached ; change method interface, so that the remaining buffer content can be determined
- * \todo 
- * 
- * \param lns targeted Lines instance
- * \param buffer buffer containing the data too be append 
- * \param size determines how many chars from the buffer will be append
- * \return targeted Lines instance
- */
-//Lines *lnsAddBuffer( Lines *lns, char *buffer, int size);
-
-/** \memberof Lines
- * 
- * Returns whether CRLF CRLF is reached
- * 
- * \param lns targeted Lines instance
- * \return targeted Lines instance
- */
-//int lnsRqstComplete( Lines *lns );
+Lines *lnsClear( Lines *lns );
 
 /** \memberof Lines
  * 

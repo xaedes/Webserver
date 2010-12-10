@@ -131,6 +131,7 @@ Response *rspInit( ) {
 	memset( rsp, 0, sizeof( Response ) );
 	rsp->message = rspmInit();
 	rsp->strings = vcInit();
+	rsp->dstrings = vcInit();
 	
 	return rsp;
 }
@@ -143,6 +144,13 @@ Response* rspReset( Response* rsp )
 	if ( rsp->appendix )
 		rspApdxReset( rsp->appendix );
 	rspmReset( rsp->message );
+	
+	while( rsp->strings->size ) {
+		free( vcPop( rsp->strings ) );
+	}
+	while( rsp->dstrings->size ) {
+		dsFree( vcPop( rsp->dstrings ) );
+	}
 	
 	return rsp;
 }
@@ -159,6 +167,12 @@ void rspFree( Response *rsp )
 			free( vcPop( rsp->strings ) );
 		}
 		vcFree( rsp->strings );
+	}
+	if ( rsp->dstrings ) {
+		while( rsp->dstrings->size ) {
+			dsFree( vcPop( rsp->dstrings ) );
+		}
+		vcFree( rsp->dstrings );
 	}
 	
 	free( rsp );
@@ -219,17 +233,20 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 					if ( ct ) {
 						rsp->message->http->statusLine->statuscode = STATUS_OK;
 						
-						char *size = itoa( fsize( filename->buffer ) );
-						hmAddHeader( rsp->message->http, "Content-Length", size );
+						DString *size = itods( fsize( filename->buffer ) );
+						dsZeroTerminate( size );
+						hmAddHeader( rsp->message->http, "Content-Length", size->buffer );
 						
-						ct = dynstrcpy( 0, ct );	//kopie anfertigen
-						dynstrcat( &ct, "/" );
-						dynstrcat( &ct, ext );
+						DString *dct = dsInit( 16 );
+						dsCpyString( dct, ct );
+						dsCatChar( dct, '/' );
+						dsCatString( dct, ext );
+						dsZeroTerminate( dct );
 						
-						hmAddHeader( rsp->message->http, "Content-Type", ct );
+						hmAddHeader( rsp->message->http, "Content-Type", dct->buffer );
 						
-						vcPush( rsp->strings, size );
-						vcPush( rsp->strings, ct );
+						vcPush( rsp->dstrings, size );
+						vcPush( rsp->dstrings, dct );
 						
 						if ( !rsp->appendix )
 							rsp->appendix = rspApdxInit( cfg->fileBufferSize, filename->buffer );
@@ -246,8 +263,7 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 				}
 			} // if ( fisdir( filename ) ) else
 			
-			vcPush( rsp->strings, filename->buffer ); 
-			dsFreeKeep( filename );
+			vcPush( rsp->dstrings, filename ); 
 		} // if ( strcmp( rsp->rqst->method, "GET" ) == 0 )
 		else {
 			rsp->message->http->statusLine->statuscode = STATUS_BAD_REQUEST;

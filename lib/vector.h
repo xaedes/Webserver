@@ -75,6 +75,15 @@ void *vcPop( Vector *vc );
 
 /** \memberof Vector
  * 
+ * Clears the Vector
+ * 
+ * \param vc targeted Vector instance
+ * \return targeted Vector instance
+ */
+void vcClear( Vector *vc );
+
+/** \memberof Vector
+ * 
  * Frees the Vector instance and all the variables that where initialized in this context.
  * 
  * \param vc targeted Vector instance

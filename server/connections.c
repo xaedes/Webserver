@@ -27,7 +27,7 @@ Connections *consInit()
 		handle_error( "consInit" );
 	memset( cons, 0, sizeof( Connections ) );
 	cons->size = 0;
-	cons->reserved = 10100;
+	cons->reserved = 1000;
 	cons->clients = calloc( cons->reserved, sizeof( Client ) );
 	if ( !cons->clients )
 		handle_error( "consEnlarge" );
@@ -67,21 +67,23 @@ void consDel( Connections *cons, int i )
 {
 	if ( cons->size )
 	{
-		//consConnectionReset( cons, i );
-		consConnectionFree( cons, i );
+		consConnectionReset( cons, i );
+		//consConnectionFree( cons, i );
 		
 		
 		//letztes element mit zu löschender stelle tauschen
 		
-		//Client tmpClient = cons->clients[i];
-		//struct pollfd tmpPoll = cons->poll[i];
+		Client tmpClient = cons->clients[i];
+		struct pollfd tmpPoll = cons->poll[i];
+		
 		cons->clients[i] = cons->clients[cons->size-1];
 		cons->poll[i] = cons->poll[cons->size-1];
-		//cons->clients[cons->size-1] = tmpClient;
-		//cons->poll[cons->size-1] = tmpPoll;
+		
+		cons->clients[cons->size-1] = tmpClient;
+		cons->poll[cons->size-1] = tmpPoll;
 
-		memset( cons->clients + cons->size-1, 0, sizeof( Client ) );
-		memset( cons->poll + cons->size-1, 0, sizeof( struct pollfd ) );
+/*		memset( cons->clients + cons->size-1, 0, sizeof( Client ) );
+		memset( cons->poll + cons->size-1, 0, sizeof( struct pollfd ) );*/
 		
 		--cons->size;
 	}
@@ -89,27 +91,53 @@ void consDel( Connections *cons, int i )
 
 Connections* consConnectionReset(Connections* cons, int i)
 {
-	Client *client = &cons->clients[i];
+	consConnectionFree( cons, i );
+	consConnectionInit( cons, i );
+	//consInit( cons, i );
 	
-	cons->poll[i].fd = 0;
-	cons->poll[i].revents = 0;
-	//cons->clients[i].addr = addr;
+	return cons;
 	
-	client->ios == ios_receive; //starteinstellung
+// 	Client *client = &cons->clients[i];
+// 	
+// 	cons->poll[i].fd = 0;
+// 	cons->poll[i].revents = 0;
+// 	//cons->clients[i].addr = addr;
+// 	
+// 	client->ios == ios_receive; //starteinstellung
+// 	
+// 	
+// 	rspReset( client->rsp );
+// 
+// 	if ( client->sfd )
+// 		close( client->sfd ); 
+// 	if ( client->lnsRead ) 
+// 		lnsFree( client->lnsRead );
+// 	if ( client->rqst )
+// 		rqstFree( client->rqst );
+// 	
+// 	client->sfd = 0;
+// 	client->lnsRead = 0;
+// 	client->rqst = 0;
+// 	
+// 	return cons;
+// 
 	
-	
-	rspReset( client->rsp );
+}
 
-	if ( client->sfd )
-		close( client->sfd ); 
-	if ( client->lnsRead ) 
-		lnsFree( client->lnsRead );
-	if ( client->rqst )
-		rqstFree( client->rqst );
+Connections* consConnectionInit(Connections* cons, int i)
+{
+	if ( cons->clients[i].initialized )
+		handle_fail( "consConnectionInit: already initialized" );
 	
-	client->sfd = 0;
-	client->lnsRead = 0;
-	client->rqst = 0;
+	memset( cons->clients + i, 0, sizeof( Client ) );
+	memset( cons->poll + i, 0, sizeof( struct pollfd ) );
+	
+	cons->clients[i].lnsRead = lnsInit();
+	cons->clients[i].rqst = rqstInit();
+	cons->clients[i].rqst->lns = cons->clients[i].lnsRead;
+	cons->clients[i].rsp = rspInit();
+	cons->clients[i].rsp->rqst = cons->clients[i].rqst;
+	cons->clients[i].initialized = 1;
 	
 	return cons;
 }
@@ -121,7 +149,6 @@ Connections *consConnectionSetup( Connections *cons, int i, int fd, struct socka
 	cons->clients[i].addr = addr;
 	
 	cons->poll[i].fd = fd;
-	cons->clients[i].ios = ios_receive; //starteinstellung
 	
 	return cons;
 }
@@ -131,26 +158,20 @@ Connections *consConnectionSetIOStatus( Connections *cons, int i, IO_Status ios 
 	
 	switch( ios ) {
 	case ios_receive:
-		if ( cons->clients[i].ios == ios_send ) {
-			if ( cons->clients[i].rqst ) {
-				rqstFree( cons->clients[i].rqst );
-				cons->clients[i].rqst = 0;
-			}
-			if ( cons->clients[i].lnsRead ) {
-				lnsFree( cons->clients[i].lnsRead );
-				cons->clients[i].lnsRead = 0;
-			}
-		}
-		
 		cons->clients[i].ios = ios_receive;
 		cons->poll[i].events = POLLIN;
-		cons->clients[i].rqst = rqstInit();
-		cons->clients[i].lnsRead = lnsInit();
+		
+		rqstReset( cons->clients[i].rqst );
+		lnsClear( cons->clients[i].lnsRead );
 		cons->clients[i].rqst->lns = cons->clients[i].lnsRead;
 		break;
 	case ios_send:
 		cons->clients[i].ios = ios_send;
 		cons->poll[i].events = POLLOUT;
+		
+		rspReset( cons->clients[i].rsp );
+		cons->clients[i].rsp->rqst = cons->clients[i].rqst;
+		
 		break;
 	default:
 		handle_fail( "consConnectionSetIOStatus: unimplemented IO_Status" );
@@ -172,6 +193,7 @@ Connections *consConnectionFree( Connections *cons, int i )
 	if ( client->rqst )
 		rqstFree( client->rqst );
 	
+	memset( client, 0, sizeof( Client ) );
 	client->sfd = 0;
 	client->lnsRead = 0;
 	client->rsp = 0;

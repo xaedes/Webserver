@@ -8,21 +8,31 @@ int sizeUntilDoubleNewline( int *nCR, int *nLF, const char *string, int size )
 {
 	int i = 0;
 	int lastNonCRLD = -1;
+	int ncr = 0;
+	int nlf = 0;
 	while ( i < size ) {
-		if ( string[i] == '\r' )
-			++(*nCR);
-		else if ( string[i] == '\n' )
-			++(*nLF);
-		else {
-			*nCR = 0;
-			*nLF = 0;
+		switch( string[i] ) {
+		case '\r':
+			++ncr;
+			if ( ncr >= 2 ) {
+				return lastNonCRLD + 1;
+			}
+			break;
+		case '\n':
+			++nlf;
+			if ( nlf >= 2 ) {
+				return lastNonCRLD + 1;
+			}
+			break;
+		default:
+			ncr = nlf = 0;
 			lastNonCRLD = i;
-		}
-		if ( ( *nCR >= 2 ) || ( *nLF >= 2 ) ) {
-			return lastNonCRLD + 1;
+			break;
 		}
 		++i;
 	}
+	*nCR = ncr;
+	*nLF = nlf;
 	return size;
 }
 
@@ -40,6 +50,7 @@ Request *rqstInit( )
 	rqst->http = hmInit();
 	rqst->http->type = HTTP_MESSAGE_REQUEST;
 	rqst->strings = vcInit();
+	rqst->dstrings = vcInit();
 
 	return rqst;
 }
@@ -85,12 +96,13 @@ Request *rqstParseRequestLine( Request *rqst )
 	char *pos = ln;
 	int len = strlen( ln );
 	char *end = pos + len;
-
+	
+	
 	parseWhileNoSP( pos, end, &rqst->method, &pos );
 	parseWhileNoSP( pos, end, &rqst->uri, &pos );
 	parseWhileNoSP( pos, end, &rqst->httpversion, &pos );
-
-
+	
+	
 	return rqst;
 }
 
@@ -98,13 +110,16 @@ Request *rqstParseHeader( Request *rqst, int firstLine, int lastLine )
 {
 	Lines *lns = rqst->lns;
 	char *pos = lns->items[firstLine];
-	int len = strlen( lns->items[firstLine] );
-	char *end = pos + len;
 	
-	char *name = 0;
 	
-	parseWhileNo( pos, end, ':', &name, &pos );
 	
+	char *name = pos;
+
+	pos = index( pos, ':' );
+
+	*pos = '\0';
+	
+	pos++;
 	
 	DString *value = dsInit( 128 );
 	int s = strspn( pos, " \t" );
@@ -118,12 +133,10 @@ Request *rqstParseHeader( Request *rqst, int firstLine, int lastLine )
 		dsCatString( value, lns->items[i] + s );
 	}
 	
-	vcPush( rqst->strings, name );
-	vcPush( rqst->strings, value->buffer );
+	vcPush( rqst->dstrings, value );
 	
 	hmAddHeader(rqst->http, name, value->buffer );
 	
-	dsFreeKeep( value );
 	
 	return rqst;
 }
@@ -149,8 +162,11 @@ Request *rqstParseHeaders( Request *rqst )
 Request *rqstParse( Request *rqst )
 {
 	rqstParseRequestLine( rqst );
-	//TODO : parse headers
+	
+	
 	rqstParseHeaders( rqst );
+	
+	
 }
 
 void rqstFree( Request *rqst )
@@ -179,9 +195,39 @@ void rqstFree( Request *rqst )
 		}
 		vcFree( rqst->strings );
 	}
+	if ( rqst->dstrings ) {
+		while( rqst->dstrings->size ) {
+			dsFree( vcPop( rqst->dstrings ) );
+		}
+		vcFree( rqst->dstrings );
+	}
 	
 	free( rqst );
 }
+
+Request* rqstReset(Request* rqst)
+{
+	dsCpyChars( rqst->buffer, 0, 0 );
+	free( rqst->method );
+	free( rqst->uri );
+	free( rqst->httpversion );
+	rqst->lastNLF = rqst->lastNCR = rqst->lns = rqst->method = rqst->uri = rqst->httpversion = 0;
+	
+	hmReset( rqst->http );
+	rqst->http->type = HTTP_MESSAGE_REQUEST;
+	
+	//Todo rqst->strings
+	
+	while( rqst->strings->size ) {
+		free( vcPop( rqst->strings ) );
+	}
+	while( rqst->dstrings->size ) {
+		dsFree( vcPop( rqst->dstrings ) );
+	}
+	
+	return rqst;
+}
+
 
 /*
 

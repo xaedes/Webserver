@@ -112,6 +112,7 @@ ResponseMessage *rspmReset( ResponseMessage *rspm );
  */
 typedef struct Response {
 	Vector *strings;	/**< Saves pointers to strings that have to be free'd */
+	Vector *dstrings;	/**< Saves pointers to strings that have to be free'd */
 	Request *rqst; 				/**< corresponding Request object */
 	ResponseMessage *message;	/**< saves the generated message */
 	int sendState; 				/**< stores whether currently sending message header ( == 0) or message body ( == 1) */

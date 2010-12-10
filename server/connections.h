@@ -8,13 +8,14 @@
 #include <netinet/in.h>
 
 typedef enum io_status {
-	ios_receive, ios_send
+	ios_none, ios_receive, ios_send
 } IO_Status;
 
 /**
  * Stores client spezific data
  */
 typedef struct Client {
+	int initialized;
 	int sfd;					/**< socket file descriptor to client */
 	struct sockaddr_in addr;	/**< address given by accept() */
 	Lines *lnsRead;				/**< stores read data from client */
@@ -76,6 +77,16 @@ void consDel( Connections *cons, int i );
 
 /** \memberof Connections
  * 
+ * Inits a connection.
+ * 
+ * \param cons targeted Connections instance
+ * \param i index of connection
+ * \return targeted Connections instance
+ */
+Connections *consConnectionInit( Connections *cons, int i );
+
+/** \memberof Connections
+ * 
  * Sets up the connection at index i
  * 
  * \param cons targeted Connections instance
@@ -112,7 +123,7 @@ Connections *consConnectionReset( Connections *cons, int i );
  * Frees a connection and all the variables that where initialized in this context.
  * 
  * \param cons targeted Connections instance
- * \param i index
+ * \param i index of connection
  * \return targeted Connections instance
  */
 Connections *consConnectionFree( Connections *cons, int i );
