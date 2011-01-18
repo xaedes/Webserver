@@ -1,7 +1,7 @@
 #ifndef __serverconfig_header__
 #define __serverconfig_header__
 
-#include "server/contenttype.h"
+#include "lib/stringmap.h"
 
 /**
  * Saves the configs for the server.
@@ -11,10 +11,13 @@ typedef struct {
 	int readBufferSize;			/**< the size of the buffer for receiving data from clients */
 	int writeBufferSize;		/**< the size of the buffer for sending data to clients */
 	int fileBufferSize;			/**< the size of the buffer for reading from files */
-	const char *publicDir;		/**< the path (relativ to working directory) containing public data */
+	const char *publicDir;		/**< the path (relative to working directory) containing public data */
 	const char *indexFile;		/**< the path of a index file, the browser is redirected to when trying * to access a directory (usually index.html) */
 	
-	ContentTypes *contentTypes;
+	const char *pipeDir;		/**< the path (relative to working directory or absolute) for creating named pipes  */
+	
+	StringMap *contentTypes;
+	StringMap *cli;
 	
 	/**
 	 * the http version the server is working with. 

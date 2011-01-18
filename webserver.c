@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <signal.h>
 
+
+
+
 #define DEBUG
 
 
@@ -91,11 +94,33 @@ int main( int argc, char *argv[] )
 {
 	Server *srv = srvInit();
 
-	srv->cfg = srvCfgInit();
-	srvCfgLoad( srv->cfg, argc, argv );
-	srv->cons = consInit();
-
+	srvSetup( srv, argc, argv );
+	
 	srvStart( srv );
+	
+/*	{
+		int in = consAdd( srv->cons );
+		consConnectionInit( srv->cons, in );
+		struct sockaddr_in s;
+		
+		consConnectionSetup( srv->cons, in , 0, s );
+
+		int out = consAdd( srv->cons );
+		
+		consConnectionInit( srv->cons, out );
+		
+		consConnectionSetup( srv->cons, out , 1, s );
+		
+		consConnectionForward( srv->cons, in, out );
+	}*/
+// 	{
+// 		int con = consAdd( srv->cons );
+// 		consConnectionInit( srv->cons, con );
+// 		struct sockaddr_in s;
+// 		
+// 		consConnectionSetup( srv->cons, con , -1, s );
+// 		dsCpyString( srv->cons->clients[con].forward, "Test\r\n...\r\n");
+// 	}
 
 	LOG( "Server running on port %d\n", srv->cfg->port );
 

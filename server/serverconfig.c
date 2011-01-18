@@ -15,7 +15,8 @@ ServerConfigs *srvCfgInit()
 	
 	memset( cfg, 0, sizeof( ServerConfigs ) );
 
-	cfg->contentTypes = ctInit();
+	cfg->contentTypes = smInit();
+	cfg->cli = smInit();
 	
 	return cfg;
 }
@@ -66,17 +67,20 @@ ServerConfigs *srvCfgLoad( ServerConfigs *cfg, int argc, char *argv[] )
 	cfg->readBufferSize = 200;
 	cfg->writeBufferSize = 200;
 	cfg->fileBufferSize = 200;
-	cfg->publicDir = "./htdocs";
+	cfg->publicDir = "../htdocs";
 	cfg->indexFile = "index.html";
 	cfg->httpversion = "HTTP/1.1";
 	cfg->serverDomain = "http://xaedes.dyndns.org:8888/";
+	cfg->pipeDir = "/home/martin/tmp";
 
-	ctAdd( cfg->contentTypes, "png", "image" );
-	ctAdd( cfg->contentTypes, "jpg", "image" );
-	ctAdd( cfg->contentTypes, "ico", "image" );
-	ctAdd( cfg->contentTypes, "html", "text" );
-	ctAdd( cfg->contentTypes, "css", "text" );
-	ctAdd( cfg->contentTypes, "", "application" );
+	smAdd( cfg->contentTypes, "png", "image" );
+	smAdd( cfg->contentTypes, "jpg", "image" );
+	smAdd( cfg->contentTypes, "ico", "image" );
+	smAdd( cfg->contentTypes, "html", "text" );
+	smAdd( cfg->contentTypes, "css", "text" );
+	smAdd( cfg->contentTypes, "", "application" );
+	
+	smAdd( cfg->cli, "php", "php" );
 	
 	return cfg;
 }
@@ -87,7 +91,8 @@ void srvCfgFree( ServerConfigs* cfg )
 	if ( !cfg )
 		return;
 	
-	ctFree( cfg->contentTypes );
+	smFree( cfg->contentTypes );
+	smFree( cfg->cli );
 	
 	free( cfg );
 }

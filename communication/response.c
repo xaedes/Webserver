@@ -6,9 +6,13 @@
 #include "server/serverconfig.h"
 #include "http/http.h"
 #include "lib/dstring.h"
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 ResponseAppendix *rspApdxInit( int bufSize, char *filename )
 {
@@ -33,9 +37,9 @@ ResponseAppendix* rspApdxReset( ResponseAppendix* rspApdx )
 	rspApdx->filename->size = 0;
 	
 	//FILE *file;
-	if ( rspApdx->file )
-		fclose( rspApdx->file );
-	rspApdx->file = 0;
+	if ( rspApdx->file >= 0 )
+		close( rspApdx->file );
+	rspApdx->file = -1;
 	
 	//char *buffer;
 	//nothing to do
@@ -59,7 +63,10 @@ ResponseAppendix* rspApdxOpen( ResponseAppendix* rspApdx, char* filename )
 {
 	dsCpyString( rspApdx->filename, filename );
 	dsZeroTerminate( rspApdx->filename );
-	rspApdx->file = fopen( rspApdx->filename->buffer, "r" );
+//	rspApdx->file = open( rspApdx->filename->buffer, O_RDONLY );
+	rspApdx->file = open( rspApdx->filename->buffer, O_RDONLY | O_NONBLOCK );
+	if ( rspApdx->file < 0 )
+		handle_error( "rspApdxOpen" );
 	rspApdx->eof = 0;
 	rspApdx->sent = 0;
 	rspApdx->bufFill = 0;
@@ -71,12 +78,18 @@ ResponseAppendix* rspApdxOpen( ResponseAppendix* rspApdx, char* filename )
 //schließt datei automatisch, wenn dateiende erreicht
 int rspApdxLoad( ResponseAppendix *rspApdx )
 {
-	rspApdx->bufFill = fread( rspApdx->buffer, 1, rspApdx->bufSize, rspApdx->file );
-
-	if( feof( rspApdx->file ) ) {
-		fclose( rspApdx->file );
-		rspApdx->file = 0;
+	rspApdx->bufFill = read( rspApdx->file, rspApdx->buffer, rspApdx->bufSize );
+	
+	
+	if( rspApdx->bufFill == 0 ) {
+		close( rspApdx->file );
+		rspApdx->file = -1;
 		rspApdx->eof = 1;
+	} else if ( rspApdx->bufFill < 0 ) {
+		if ( ( errno != EAGAIN ) && ( errno != EWOULDBLOCK ) )
+			handle_error( "rspApdxLoad" );
+		else
+			rspApdx->bufFill = 0;
 	}
 
 	rspApdx->sent = 0;
@@ -89,8 +102,8 @@ void rspApdxFree( ResponseAppendix *rspApdx )
 	if ( !rspApdx )
 		return;
 
-	if ( rspApdx->file )
-		fclose( rspApdx->file );
+	if ( rspApdx->file >= 0 )
+		close( rspApdx->file );
 	if ( rspApdx->filename )
 		dsFree( rspApdx->filename );
 	if ( rspApdx->buffer )
@@ -264,7 +277,7 @@ Response *rspBuild( Response *rsp, ServerConfigs *cfg ) {
 			} else { //if ( fisdir( filename ) )
 				if ( fexists( filename->buffer ) ) {
 					char *ext = fextension( filename->buffer );
-					char *ct = ctGet( cfg->contentTypes, ext );
+					char *ct = smGet( cfg->contentTypes, ext );
 					if ( ct ) {
 						rsp->message->http->statusLine->statuscode = STATUS_OK;
 						

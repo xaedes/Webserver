@@ -8,7 +8,10 @@
 
 #include "lib/vector.h"
 
-#define DS_RECYCLE_
+/**
+ * Compile with or without DString recycling feature
+ */
+#define DS_RECYCLE
 
 #ifdef DS_RECYCLE
 

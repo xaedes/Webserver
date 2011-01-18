@@ -13,7 +13,7 @@
  */
 typedef struct responseAppendix {
 	DString *filename;	/**< filename of the file */
-	FILE *file;			/**< reference to opened file */
+	int file;			/**< reference to opened file */
 	char *buffer;		/**< file read buffer */
 	int bufSize;		/**< file read buffer size */
 	int bufFill;		/**< current size of buffer (how many bytes are sendable) */

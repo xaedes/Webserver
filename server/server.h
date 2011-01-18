@@ -5,12 +5,15 @@
 
 #include "server/serverconfig.h"
 
+#include "server/responsefactory.h"
+
 /**
  * Represents the Server
  */
 typedef struct Server {
 	ServerConfigs *cfg;			/**< Configurations for the server */
-	Connections *cons;	/**< Connections for the server */
+	Connections *cons;			/**< Connections for the server */
+	ResponseFactory *rfactory;	/**< ResponseFactory */
 	char *readBuffer;			/**< Central buffer for receiving data from clients */
 	int socket;					/**< Holds the server socket file descriptor. */
 } Server;
@@ -22,6 +25,17 @@ typedef struct Server {
  * \return new Server instance
  */
 Server *srvInit ( );
+
+/** \memberof Server
+ * 
+ * Sets up the server
+ * 
+ * \param srv targeted Server instance
+ * \param argc (from main)
+ * \param argv (from main)
+ * \return targeted Server instance
+ */
+Server *srvSetup( Server *srv, int argc, char *argv[] );
 
 /** \memberof Server
  * 

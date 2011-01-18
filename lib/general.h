@@ -111,6 +111,8 @@ char *itoa( int i );
  * 
  * Returns the a pointer to the extension part of a filename cstring
  * 
+ * \todo implement integer display for signed values ( minus ) 
+ * 
  * \param filename 
  * \return filename extension excluding the dot
  */

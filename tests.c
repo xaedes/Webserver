@@ -6,6 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <poll.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <uriparser/Uri.h>
 
 void tokenizer( int argc, char *argv[] )
 {
@@ -120,12 +127,156 @@ void dstring( int argc, char *argv[] )
 	//printf( "%s\n" , ds->buffer );
 }
 
+void*thsys(void*cmd)
+{
+	system((char*)cmd);
+}
+
+void threadExec( char*cmd )
+{
+	pthread_t p;
+	pthread_create (&p, 0, thsys, (void*)cmd);
+	pthread_detach ( p );
+	pthread_join (p, 0);
+}
+
+void fifopoll( int argc, char *argv[] )
+{
+	char *filepipe = "/home/martin/tmp/file";
+	char *outpipe = "/home/martin/tmp/out";
+
+	/*
+	remove(filepipe);
+	remove(outpipe);
+
+	mkfifo(filepipe,S_IRWXU | S_IRWXG | S_IRWXO); 
+	mkfifo(outpipe,S_IRWXU | S_IRWXG | S_IRWXO);
+	*/
+	
+	struct pollfd parr[4];
+
+	threadExec("php < /home/martin/tmp/file > /home/martin/tmp/out");
+	
+	parr[0].fd = 1;
+	parr[2].fd = 0;
+	printf("waiting for %s\n", filepipe);
+	parr[3].fd = open( filepipe, O_WRONLY  );
+	printf("done\n");
+	printf("waiting for %s\n", outpipe);
+	parr[1].fd = open( outpipe, O_RDONLY | O_NONBLOCK );
+	printf("done\n");
+	
+	parr[0].events = POLLOUT;
+	parr[1].events = POLLIN;
+	parr[2].events = POLLIN;
+	parr[3].events = POLLOUT;
+	
+	char buf1[200];
+	int size1 = 0;
+	int sent1 = 0;
+	
+	char buf2[200];
+	int size2 = 0;
+	int sent2 = 0;
+	
+	memset( buf2, 0, 200);
+	strcpy( buf2, "<? echo \"Hallo\n\"; ?>");
+	size2 = strlen( buf2 );
+	
+	while(1){
+		int p = poll(&parr[0],4,-1);
+		if ( p < 0 )
+			handle_error("poll");
+		if ( p ) {
+			int i;
+
+			//if ( parr[0].revents & POLLOUT ) {
+				if ( size1 > sent1 ) {
+					int len = write( parr[0].fd, buf1, size1 - sent1 );
+					if ( len < 0 )
+						handle_error("write:0");
+					if ( len )
+						sent1+=len;
+					printf("write to %d : %d\n", 0, len);
+				}
+			//}
+
+			if ( parr[3].revents & POLLOUT ) {
+				if ( size2 > sent2 ) {
+					int len = write( parr[3].fd, buf2, size2 - sent2 );
+					if ( len < 0 )
+						handle_error("write:3");
+					if ( len ) {
+						sent2+=len;
+						if ( sent2 == size2 ) {
+							parr[3].events = 0;
+							close( parr[3].fd );
+						}
+					}
+					printf("write to %d : %d\n", 3, len);
+				}
+			}
+			
+			if ( parr[1].revents & POLLIN ) {
+				if ( size1 <= sent1 ) {
+					int len = read( parr[1].fd, buf1, 200 );
+					if ( len < 0 )
+						handle_error("read:1");
+					if ( len ) {
+						size1 = len;
+						sent1 = 0;
+					}
+					printf("read from %d : %d\n", 1, len);
+				}
+			}
+			if ( parr[1].events && parr[1].revents & POLLHUP ) {
+				printf("outpipe hang up\n");
+				parr[1].events = 0;
+			}
+
+			if ( parr[2].revents & POLLIN ) {
+				if ( size2 <= sent2 ) {
+					int len = read( parr[2].fd, buf2, 200 );
+					if ( len < 0 )
+						handle_error("read:2");
+					if ( len ) {
+						size2 = len;
+						sent2 = 0;
+					}
+					printf("read from %d : %d\n", 2, len);
+				}
+			}
+		}
+	}
+	
+	close(parr[1].fd);
+	close(parr[3].fd);
+	
+}
+
+void uri( int argc, char *argv[] )
+{
+	UriParserStateA state;
+	UriUriA uri; 
+	
+
+	state.uri = &uri;
+	if (uriParseUriA(&state, argv[2]) != URI_SUCCESS) {
+		/* Failure */
+//		uriFreeUriMembersA(&uri);
+	} else {
+	}
+	uriFreeUriMembersA(&uri);
+}
+
 void print_help()
 {
 	printf( "WebServer Testprogramm\n" );
 	printf( "usage: \n" );
 	printf( " test tokenizer string seperators \n" );
 	printf( " test dstring [n benchmark = 10000] \n" );
+	printf( " test fifopoll \n" );
+	printf( " test uri \n" );
 }
 
 int main( int argc, char *argv[] )
@@ -140,12 +291,19 @@ int main( int argc, char *argv[] )
 	if ( strcmp( test, "tokenizer" ) == 0 )
 		tokenizer( argc, argv );
 	else
-		if ( strcmp( test, "dstring" ) == 0 )
-			dstring( argc, argv );
-		else
-			print_help();
-
-
-
+	if ( strcmp( test, "dstring" ) == 0 )
+		dstring( argc, argv );
+	else
+	if ( strcmp( test, "fifopoll" ) == 0 )
+		fifopoll( argc, argv );
+	else
+	if ( strcmp( test, "uri" ) == 0 )
+		uri( argc, argv );
+	else
+		print_help();
+	
+	
+	
+	
 	return 0;
 }

@@ -75,7 +75,15 @@ void consDel( Connections *cons, int i )
 		Client tmpClient = cons->clients[i];
 		struct pollfd tmpPoll = cons->poll[i];
 		
-		cons->clients[i] = cons->clients[cons->size-1];
+		Client lst = cons->clients[cons->size-1];
+		
+/*		if ( lst.ios == ios_forward_receiver) {
+			cons->clients[lst.iForwardSource].iForwardDest = i;
+		} else if ( lst.ios == ios_forward_sender) {
+			cons->clients[lst.iForwardDest].iForwardSource = i;
+		}*/
+		
+		cons->clients[i] = lst;
 		cons->poll[i] = cons->poll[cons->size-1];
 		
 		cons->clients[cons->size-1] = tmpClient;
@@ -97,6 +105,17 @@ void consDel( Connections *cons, int i )
 		--cons->size;
 	}
 }
+
+// Connections* consConnectionForward(Connections* cons, int from, int to)
+// {
+// 	cons->clients[from].iForwardDest = to;
+// 	consConnectionSetIOStatus( cons, from, ios_forward_sender );
+// 	cons->clients[to].iForwardSource = from;
+// 	consConnectionSetIOStatus( cons, to, ios_forward_receiver );
+// 	
+// 	return cons;
+// }
+
 
 Connections* consConnectionReset(Connections* cons, int i)
 {
@@ -145,13 +164,30 @@ Connections* consConnectionReset(Connections* cons, int i)
 	
 	//IO_Status ios;
 	
-	client->ios = ios_receive;
+	client->ios = ios_none;
 	
 	//int initialized;
 	
 	client->initialized = 1;
 	
+	//DString *forward;
 	
+	client->forward->size = 0;
+	
+	//int iForwardSource;
+
+	client->iForwardSource = -1;
+	
+	//int iForwardDest;
+	
+	client->iForwardDest = -1;
+	
+	//int forwardEOF;
+	
+	client->forwardEOF = 0;
+	
+	//void (*forwardHangUp)(int);
+	client->forwardHangUp = 0;
 }
 
 Connections *consConnectionFree( Connections *cons, int i )
@@ -166,6 +202,8 @@ Connections *consConnectionFree( Connections *cons, int i )
 		rspFree( client->rsp ); 
 	if ( client->rqst )
 		rqstFree( client->rqst );
+	if ( client->forward )
+		dsFree( client->forward );
 	
 	memset( client, 0, sizeof( Client ) );
 	
@@ -185,16 +223,22 @@ Connections* consConnectionInit(Connections* cons, int i)
 	cons->clients[i].rqst->lns = cons->clients[i].lnsRead;
 	cons->clients[i].rsp = rspInit();
 	cons->clients[i].rsp->rqst = cons->clients[i].rqst;
+	cons->clients[i].forward = dsInit( 512 );
+	cons->clients[i].iForwardSource = -1;
+	cons->clients[i].iForwardDest = -1;
+	cons->clients[i].forwardEOF = 0;
+	cons->clients[i].forwardHangUp = 0;
 	cons->clients[i].initialized = 1;
 	
 	return cons;
 }
 
 
-Connections *consConnectionSetup( Connections *cons, int i, int fd, struct sockaddr_in addr )
+Connections *consConnectionSetup( Connections *cons, int i, int fd, struct sockaddr_in *addr )
 {
 	cons->clients[i].sfd = fd;
-	cons->clients[i].addr = addr;
+	if ( addr )
+		cons->clients[i].addr = *addr;
 	
 	cons->poll[i].fd = fd;
 	
@@ -205,28 +249,52 @@ Connections *consConnectionSetIOStatus( Connections *cons, int i, IO_Status ios 
 {
 	
 	switch( ios ) {
-	case ios_receive:
-		cons->clients[i].ios = ios_receive;
+	case ios_receive_httpheaders:
+		cons->clients[i].ios = ios_receive_httpheaders;
 		cons->poll[i].events = POLLIN;
 		
 		rqstReset( cons->clients[i].rqst );
 		lnsClear( cons->clients[i].lnsRead );
 		cons->clients[i].rqst->lns = cons->clients[i].lnsRead;
 		break;
-	case ios_send:
-		cons->clients[i].ios = ios_send;
+	case ios_send_respond:
+		cons->clients[i].ios = ios_send_respond;
 		cons->poll[i].events = POLLOUT;
 		
 		rspReset( cons->clients[i].rsp );
 		cons->clients[i].rsp->rqst = cons->clients[i].rqst;
 		
 		break;
+	case ios_receive_messagebody:
+		cons->clients[i].ios = ios_receive_messagebody;
+		cons->poll[i].events = POLLIN;
+		
+/*		rqstReset( cons->clients[i].rqst );
+		lnsClear( cons->clients[i].lnsRead );*/
+		
+		
+		break;
+/*	case ios_forward_sender:
+		cons->clients[i].ios = ios_forward_sender;
+		
+		//der forward_sender liest von seinem fd und stellt es seinem forward partner zur verfügung
+		cons->poll[i].events = POLLIN;	
+		
+		break;
+	case ios_forward_receiver:
+		cons->clients[i].ios = ios_forward_receiver;
+		
+		//der forward_receiver schreibt auf seinem fd und bekommt seine daten von seinem forward partner
+		cons->poll[i].events = POLLOUT;
+		
+		break;*/
 	default:
 		handle_fail( "consConnectionSetIOStatus: unimplemented IO_Status" );
 	}
 	
 	return cons;
 }
+
 
 
 void consFree( Connections *cons )

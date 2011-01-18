@@ -241,6 +241,8 @@ void dsMemoryTrim ( DString *ds );
  * 
  * Converts an integer to a dstring 
  * 
+ * \todo implement integer display for signed values ( minus ) 
+ *
  * \param integer 
  * \return DString instance
  */

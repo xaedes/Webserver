@@ -8,8 +8,8 @@ int sizeUntilDoubleNewline( int *nCR, int *nLF, const char *string, int size )
 {
 	int i = 0;
 	int lastNonCRLD = -1;
-	int ncr = 0;
-	int nlf = 0;
+	int ncr = *nCR;
+	int nlf = *nLF;
 	while ( i < size ) {
 		switch( string[i] ) {
 		case '\r':
@@ -116,27 +116,29 @@ Request *rqstParseHeader( Request *rqst, int firstLine, int lastLine )
 	char *name = pos;
 
 	pos = index( pos, ':' );
+	
+	if ( pos ) {
+	
+		*pos = '\0';
+		
+		pos++;
+		
+		DString *value = dsInit( 128 );
+		int s = strspn( pos, " \t" );
+		dsCpyString( value, pos + s );
+		
+		int i = 0;
+		for ( i = firstLine + 1; i <= lastLine; ++i ) {
+			int s = strspn( lns->items[i], " \t" );
 
-	*pos = '\0';
-	
-	pos++;
-	
-	DString *value = dsInit( 128 );
-	int s = strspn( pos, " \t" );
-	dsCpyString( value, pos + s );
-	
-	int i = 0;
-	for ( i = firstLine + 1; i <= lastLine; ++i ) {
-		int s = strspn( lns->items[i], " \t" );
-
-		dsCatChar( value, ' ' );
-		dsCatString( value, lns->items[i] + s );
-	}
-	
-	vcPush( rqst->dstrings, value );
-	
-	hmAddHeader(rqst->http, name, value->buffer );
-	
+			dsCatChar( value, ' ' );
+			dsCatString( value, lns->items[i] + s );
+		}
+		
+		vcPush( rqst->dstrings, value );
+		
+		hmAddHeader(rqst->http, name, value->buffer );
+	} 
 	
 	return rqst;
 }

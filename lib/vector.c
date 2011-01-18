@@ -9,7 +9,7 @@ Vector *vcInit()
 	if ( !vc )
 		handle_error( "vcInit" );
 	memset( vc, 0, sizeof( Vector ) );
-	vc->reserved = 32;
+	vc->reserved = 128;
 	vc->items = malloc( sizeof( void * ) * vc->reserved );
 	
 	return vc;
@@ -29,6 +29,7 @@ Vector *vcEnlarge( Vector *vc )
 
 Vector *vcShrink( Vector *vc )
 {
+	if ( vc->reserved > 1024 )
 	if ( vc->size == vc->reserved/4 ) {
 		vc->reserved /= 2;
 		vc->reserved = vc->reserved > 32 ? vc->reserved : 32;
