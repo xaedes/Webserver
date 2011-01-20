@@ -67,10 +67,11 @@ ServerConfigs *srvCfgLoad( ServerConfigs *cfg, int argc, char *argv[] )
 	cfg->readBufferSize = 200;
 	cfg->writeBufferSize = 200;
 	cfg->fileBufferSize = 200;
-	cfg->publicDir = "../htdocs";
+	cfg->publicDir = "./htdocs";
 	cfg->indexFile = "index.html";
 	cfg->httpversion = "HTTP/1.1";
-	cfg->serverDomain = "http://xaedes.dyndns.org:8888/";
+//	cfg->serverDomain = "http://xaedes.dyndns.org:8888/";
+	cfg->serverDomain = "http://localhost:8888/";
 	cfg->pipeDir = "/home/martin/tmp";
 
 	smAdd( cfg->contentTypes, "png", "image" );
