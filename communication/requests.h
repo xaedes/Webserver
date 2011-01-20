@@ -13,6 +13,7 @@ typedef struct Request {
 	int lastNCR;
 	int lastNLF;
 	DString *buffer;	/**< Buffer to read to */
+	DString *buffer2;	/**< Buffer to read to */
 	DString *backup;	
 	Lines *lns;			/**< Lines to parse from */
 	char *method;		/**< the parsed method from the request line */

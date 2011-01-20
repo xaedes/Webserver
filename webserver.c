@@ -12,7 +12,7 @@
 
 #include "lib/line.h"
 #include "lib/lines.h"
-#include "server/connections.h"
+#include "connections/connections.h"
 #include "server/server.h"
 #include "server/serverconfig.h"
 #include "lib/error.h"
@@ -133,11 +133,7 @@ int main( int argc, char *argv[] )
 			handle_error( "poll" );
 
 		if ( pr ) {
-			int i = 0;
-
-			for ( i = 0 ; ( i < srv->cons->size ) && ( 0 <= i ) ; ++i ) {
-				srvPollCycle( srv, i );
-			}
+			srvPollCycle( srv );
 		}
 	}
 }

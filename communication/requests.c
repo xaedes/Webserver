@@ -47,6 +47,7 @@ Request *rqstInit( )
 
 	/**< \todo make the initial buffer size configurable */
 	rqst->buffer = dsInit( 512 );
+	rqst->buffer2 = dsInit( 128 );
 	rqst->http = hmInit();
 	rqst->http->type = HTTP_MESSAGE_REQUEST;
 	rqst->strings = vcInit();
@@ -188,6 +189,9 @@ void rqstFree( Request *rqst )
 	if ( rqst->buffer )
 		dsFree( rqst->buffer );
 	
+	if ( rqst->buffer2 )
+		dsFree( rqst->buffer2 );
+	
 	if ( rqst->http )
 		hmFree( rqst->http );
 
@@ -210,6 +214,7 @@ void rqstFree( Request *rqst )
 Request* rqstReset(Request* rqst)
 {
 	rqst->buffer->size = 0;
+	rqst->buffer2->size = 0;
 	free( rqst->method );
 	free( rqst->uri );
 	free( rqst->httpversion );

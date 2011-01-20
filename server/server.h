@@ -1,22 +1,22 @@
 #ifndef __server_header__
 #define __server_header__
 
-#include "server/connections.h"
+#include "connections/connections.h"
 
 #include "server/serverconfig.h"
 
-#include "server/responsefactory.h"
+#include "connections/responsefactory.h"
 
 /**
  * Represents the Server
  */
-typedef struct Server {
+struct Server {
 	ServerConfigs *cfg;			/**< Configurations for the server */
 	Connections *cons;			/**< Connections for the server */
 	ResponseFactory *rfactory;	/**< ResponseFactory */
 	char *readBuffer;			/**< Central buffer for receiving data from clients */
 	int socket;					/**< Holds the server socket file descriptor. */
-} Server;
+};
 
 /** \memberof Server
  * 
@@ -49,12 +49,11 @@ Server *srvStart( Server *srv );
 
 /** \memberof Server
  * 
- * Do a poll cycle for connection #i
+ * Do a poll cycle for the connections
  * 
  * \param srv targeted Server instance
- * \param i index of connection
  */
-void srvPollCycle( Server *srv, int i );
+void srvPollCycle( Server *srv );
 
 /** \memberof Server
  * 
